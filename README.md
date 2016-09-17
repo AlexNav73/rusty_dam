@@ -1,11 +1,11 @@
 # Rusty DAM - Digital Asset Management system written in [Rust-lang]
-[Rust-lang]: https://www.rust-lang.org 
+---
 
-Currently has WIP status. And developed only for education purposes.
-
+Currently has **[WIP]** status. And developed only for education purposes.
 If you are find some bugs or way to improve code quality, please make pull request or create issue.
 
 ## Modules 
+---
 
 ### 1. bworker (background worker) - crate which allow to easily create Windows Services 
 
@@ -44,5 +44,6 @@ fn main() {
 
 > Note: Windows Service logging all his activity into EventLog. For doing that, it needed to make [Message Text File]
 > and put it aside your binary. Name for this binary should returned by your service implementation.
-[Message Text File]: https://msdn.microsoft.com/en-us/library/windows/desktop/dd996906(v=vs.85).aspx
 
+[Rust-lang]: https://www.rust-lang.org 
+[Message Text File]: https://msdn.microsoft.com/en-us/library/windows/desktop/dd996906(v=vs.85).aspx
