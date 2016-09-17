@@ -6,7 +6,8 @@ mod installer;
 
 pub mod reg;
 
-pub use self::service::{ Service, launch };
+pub use self::service::Service;
+pub use self::installer::ServiceInstaller;
 
 mod helpers {
 
@@ -63,4 +64,5 @@ mod helpers {
             CRATE_NAME_UTF8 = Some(crate_name);
         }
     }
+    
 }

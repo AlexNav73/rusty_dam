@@ -81,7 +81,7 @@ impl ServiceHandler {
 static INIT: Once = ONCE_INIT;
 static mut SERVICE: Option<Box<Service + 'static>> = None;
 
-pub fn launch<T: Service + 'static>(service: T) {
+pub fn launch<T: Service + 'static>(service: Box<T>) {
     INIT.call_once(move || {
         unsafe { 
             let service_table_entry = Box::new(SERVICE_TABLE_ENTRYW {
@@ -89,10 +89,8 @@ pub fn launch<T: Service + 'static>(service: T) {
                 lpServiceProc: Some(start_service_proc),
             });
         
-            SERVICE = Some(Box::new(service));
-            //StartServiceCtrlDispatcherW(service_table_entry.as_ref()); 
-            use std::ptr;
-            start_service_proc(0, ptr::null_mut());
+            SERVICE = Some(service);
+            StartServiceCtrlDispatcherW(service_table_entry.as_ref()); 
         }
     });
 }
@@ -102,17 +100,20 @@ unsafe extern "system" fn start_service_proc(dwNumServicesArgs: DWORD, lpService
     let mut logger = EventLog::new().unwrap();
     logger.message_type(LogType::AUDIT_FAILURE);
 
-    // let status_handler = RegisterServiceCtrlHandlerW(get_crate_name(), Some(service_dispatcher));
+    let status_handler = RegisterServiceCtrlHandlerW(get_crate_name_utf16(), Some(service_dispatcher));
 
-    // if status_handler.is_null() { 
-    //     let _ = write!(logger, "Start service: call RegisterServiceCtrlHandlerW failed.");
-    //     return; 
-    // }
+    if status_handler.is_null() { 
+        let _ = write!(logger, "Start service: call RegisterServiceCtrlHandlerW failed.");
+        return; 
+    }
 
-    // STATUS.handler(status_handler);
-    // STATUS.status(SERVICE_RUNNING);
+    STATUS.handler(status_handler);
+    STATUS.status(SERVICE_RUNNING);
 
-    // if STATUS.get_current_state() == SERVICE_RUNNING {
+    //write_to_file("Service 1!");
+
+    if STATUS.get_current_state() == SERVICE_RUNNING {
+        //write_to_file("Service 2!");
         if let Some(ref mut d) = SERVICE {
             // let args = slice::from_raw_parts(lpServiceArgVectors, dwNumServicesArgs as usize).iter()
             //     .map(|x| from_wchar(*x))
@@ -120,16 +121,16 @@ unsafe extern "system" fn start_service_proc(dwNumServicesArgs: DWORD, lpService
             //     .map(|x| x.unwrap())
             //     .collect::<Vec<_>>();
 
-            write!(logger, "Service started!");
+            //write_to_file("Service 3!");
 
             let result = panic::catch_unwind(panic::AssertUnwindSafe(|| { d.start(&[]); })); // args.as_slice()
             if !result.is_ok() { 
                 let _ = write!(logger, "Service start function panicked.");
             }
         }
-    // }
+    }
 
-    // STATUS.status(SERVICE_STOPPED);
+    STATUS.status(SERVICE_STOPPED);
 }
 
 #[allow(non_snake_case)]
@@ -160,4 +161,14 @@ unsafe extern "system" fn service_dispatcher(dwControl: DWORD) {
         }
         _ => { }
     }
+}
+
+
+fn write_to_file(arg: &str) {
+    use std::io::Write;
+    use std::fs::File;
+
+    let mut file = File::create("C:\\Users\\Aliaksandr\\Desktop\\out.txt").expect("Could not open file");
+    println!("{:?}", file.write(b"Service started!"));
+    let _ = file.write(arg.as_bytes());
 }

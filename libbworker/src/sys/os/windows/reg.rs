@@ -21,7 +21,7 @@ pub fn register_event_reg_key(app_name: &str) -> io::Result<()> {
         let key = try!(hklm.create_subkey(Path::new(&reg_key_path)));
 
         let crate_name = try!(env::current_exe()); // FIXME: Replace path to exe file with path to Message Text File dll
-        key.set_value("EventMessageFile", &crate_name.as_os_str()).unwrap();
+        key.set_value("EventMessageFile", &"").unwrap(); // crate_name.as_os_str()
 
         let types_supported = LogType::AUDIT_FAILURE | 
                                 LogType::AUDIT_SUCCESS | 

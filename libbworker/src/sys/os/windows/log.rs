@@ -19,11 +19,11 @@ impl EventLog {
     pub fn new() -> Result<EventLog, Box<io::Error>> {
         try!(reg::register_event_reg_key(&get_crate_name_utf8()).map_err(|e| Box::new(e)));
 
-        let hEventSource = unsafe { RegisterEventSourceW(ptr::null(), get_crate_name_utf16()) };
-        if hEventSource.is_null() {
+        let event_source = unsafe { RegisterEventSourceW(ptr::null(), get_crate_name_utf16()) };
+        if event_source.is_null() {
             return Err(Box::new(io::Error::last_os_error()));
         }
-        Ok(EventLog { handler: hEventSource, message_type: LogType::SUCCESS })
+        Ok(EventLog { handler: event_source, message_type: LogType::SUCCESS })
     }
 
     pub fn message_type(&mut self, m_type: LogType) {
