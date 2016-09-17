@@ -1,11 +1,9 @@
 # Rusty DAM - Digital Asset Management system written in [Rust-lang]
----
 
 Currently has **[WIP]** status. And developed only for education purposes.
 If you are find some bugs or way to improve code quality, please make pull request or create issue.
 
 ## Modules 
----
 
 ### 1. bworker (background worker) - crate which allow to easily create Windows Services 
 
