@@ -11,7 +11,6 @@ pub use self::service::{ Service, launch };
 mod helpers {
 
     use std::slice;
-    use std::iter::once;
     use std::sync::{ Once, ONCE_INIT };
     use std::ffi::{OsStr, OsString};
     use std::os::windows::ffi::{ OsStringExt, OsStrExt };

@@ -4,4 +4,4 @@ version = "0.1.0"
 authors = ["AlexNav73 <fifthhorseman@mail.ru>"]
 
 [dependencies.bworker]
-path = "src/libbworker"
+path = "libbworker"

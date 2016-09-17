@@ -28,7 +28,4 @@ impl Service for TestService {
 
 fn main() {
     launch(TestService);
-    
-    // reg::register_event_reg_key("rusty_dam_app_name");
-    // reg::unregister_event_reg_key("rusty_dam_app_name");
 }
