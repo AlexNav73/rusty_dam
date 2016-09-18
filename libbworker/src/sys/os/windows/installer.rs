@@ -19,36 +19,11 @@ pub struct ServiceInstaller;
 
 impl ServiceInstaller {
     pub fn run<T: Service + 'static>(service: T) -> io::Result<Guard> {
-        let manager = unsafe { OpenSCManagerW(ptr::null(), ptr::null(), SC_MANAGER_CREATE_SERVICE) };
-        if manager.is_null() {
-            return Err(io::Error::last_os_error());
+        if cfg!(feature = "install") {
+            try!(install_service());
+        } else {
+            launch(Box::new(service));
         }
-
-        let handle = unsafe {
-            CreateServiceW(manager,
-                    get_crate_name_utf16(),
-                    get_crate_name_utf16(),
-                    SERVICE_ALL_ACCESS,
-                    SERVICE_WIN32_OWN_PROCESS,
-                    SERVICE_DEMAND_START,
-                    SERVICE_ERROR_NORMAL,
-                    to_wchar(&"D:\\Programms\\rusty_dam\\target\\debug\\rusty_dam.exe".to_owned()),
-                    // to_wchar(&(env::current_exe().unwrap().as_os_str())),
-                    ptr::null(),
-                    ptr::null_mut(),
-                    ptr::null(),
-                    ptr::null(),
-                    ptr::null())
-        };
-
-        if handle.is_null() {
-            unsafe { CloseServiceHandle(manager); }
-            return Err(io::Error::last_os_error());
-        }
-
-        unsafe { CloseServiceHandle(handle); }
-
-        launch(Box::new(service));
         Ok(Guard)
     }
 }
@@ -60,6 +35,41 @@ impl Drop for Guard {
         clean_up().unwrap()
     }
 }
+
+#[cfg(feature = "install")]
+fn install_service() -> io::Result<()> {
+    let manager = unsafe { OpenSCManagerW(ptr::null(), ptr::null(), SC_MANAGER_CREATE_SERVICE) };
+    if manager.is_null() {
+        return Err(io::Error::last_os_error());
+    }
+
+    let handle = unsafe {
+        CreateServiceW(manager,
+                get_crate_name_utf16(),
+                get_crate_name_utf16(),
+                SERVICE_ALL_ACCESS,
+                SERVICE_WIN32_OWN_PROCESS,
+                SERVICE_DEMAND_START,
+                SERVICE_ERROR_NORMAL,
+                //to_wchar(&"\" D:\\Programms\\rusty_dam\\target\\debug\\rusty_dam.exe\"".to_owned()),
+                to_wchar(&(env::current_exe().unwrap().as_os_str())).as_ptr(),
+                ptr::null(),
+                ptr::null_mut(),
+                ptr::null(),
+                ptr::null(),
+                ptr::null())
+    };
+
+    if handle.is_null() {
+        unsafe { CloseServiceHandle(manager); }
+        return Err(io::Error::last_os_error());
+    }
+
+    unsafe { CloseServiceHandle(handle); }
+}
+
+#[cfg(not(feature = "install"))]
+fn install_service() -> io::Result<()> { Ok(()) }
 
 // #[cfg(not(install))]
 // fn clean_up() -> io::Result<()> {

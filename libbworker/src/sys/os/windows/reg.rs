@@ -16,8 +16,8 @@ pub fn register_event_reg_key(app_name: &str) -> io::Result<()> {
     reg_key_path.push_str("System\\CurrentControlSet\\Services\\EventLog\\Application\\");
     reg_key_path.push_str(app_name);
 
+    // Check if Key already created
     if let Err(_) = hklm.open_subkey_with_flags(Path::new(&reg_key_path), KEY_READ) {
-
         let key = try!(hklm.create_subkey(Path::new(&reg_key_path)));
 
         let crate_name = try!(env::current_exe()); // FIXME: Replace path to exe file with path to Message Text File dll

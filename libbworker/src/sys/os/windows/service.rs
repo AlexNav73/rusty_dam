@@ -79,7 +79,7 @@ impl ServiceHandler {
 }
 
 static INIT: Once = ONCE_INIT;
-static mut SERVICE: Option<Box<Service + 'static>> = None;
+static mut SERVICE: Option<Box<Service + 'static>> = None; // FIXME: Is there way to get rid from statics?
 
 pub fn launch<T: Service + 'static>(service: Box<T>) {
     INIT.call_once(move || {
@@ -97,53 +97,58 @@ pub fn launch<T: Service + 'static>(service: Box<T>) {
 
 #[allow(non_snake_case)]
 unsafe extern "system" fn start_service_proc(dwNumServicesArgs: DWORD, lpServiceArgVectors: *mut LPWSTR) {
-    let mut logger = EventLog::new().unwrap();
-    logger.message_type(LogType::AUDIT_FAILURE);
+    write("Service -1!");
+    //let mut logger = EventLog::new().unwrap();
+    //logger.message_type(LogType::AUDIT_FAILURE);
 
+    write("Service 0!");
     let status_handler = RegisterServiceCtrlHandlerW(get_crate_name_utf16(), Some(service_dispatcher));
 
     if status_handler.is_null() { 
-        let _ = write!(logger, "Start service: call RegisterServiceCtrlHandlerW failed.");
+        //let _ = write!(logger, "Start service: call RegisterServiceCtrlHandlerW failed.");
         return; 
     }
 
     STATUS.handler(status_handler);
     STATUS.status(SERVICE_RUNNING);
 
-    //write_to_file("Service 1!");
+    write("Service 1!");
 
     if STATUS.get_current_state() == SERVICE_RUNNING {
-        //write_to_file("Service 2!");
-        if let Some(ref mut d) = SERVICE {
+        write("Service 2!");
+        if let Some(ref mut serv) = SERVICE {
             // let args = slice::from_raw_parts(lpServiceArgVectors, dwNumServicesArgs as usize).iter()
             //     .map(|x| from_wchar(*x))
             //     .filter(|x| (*x).is_some())
             //     .map(|x| x.unwrap())
             //     .collect::<Vec<_>>();
 
-            //write_to_file("Service 3!");
+            write("Service 3!");
 
-            let result = panic::catch_unwind(panic::AssertUnwindSafe(|| { d.start(&[]); })); // args.as_slice()
+            let result = panic::catch_unwind(panic::AssertUnwindSafe(|| { serv.start(&[]); })); // args.as_slice()
             if !result.is_ok() { 
-                let _ = write!(logger, "Service start function panicked.");
+                //let _ = write!(logger, "Service start function panicked. Error: {:?}", result);
+                write("Service 3-1!");
             }
+            write("Service 4!");
         }
     }
 
     STATUS.status(SERVICE_STOPPED);
+    write("Service 5!");
 }
 
 #[allow(non_snake_case)]
 unsafe extern "system" fn service_dispatcher(dwControl: DWORD) {
-    let mut logger = EventLog::new().unwrap();
-    logger.message_type(LogType::AUDIT_FAILURE);
+    //let mut logger = EventLog::new().unwrap();
+    //logger.message_type(LogType::AUDIT_FAILURE);
 
     match dwControl {
         SERVICE_CONTROL_STOP => {
             if let Some(ref mut d) = SERVICE {
                 let result = panic::catch_unwind(panic::AssertUnwindSafe(|| { d.stop(); }));
                 if !result.is_ok() {
-                    let _ = write!(logger, "Service start function panicked.");
+                    //let _ = write!(logger, "Service stop function panicked. Error: {:?}", result);
                 }
             }
 
@@ -153,7 +158,7 @@ unsafe extern "system" fn service_dispatcher(dwControl: DWORD) {
             if let Some(ref mut d) = SERVICE {
                 let result = panic::catch_unwind(panic::AssertUnwindSafe(|| { d.stop(); }));
                 if !result.is_ok() {
-                    let _ = write!(logger, "Service start function panicked.");
+                    //let _ = write!(logger, "Service stop function panicked. Error: {:?}", result);
                 }
             }
 
@@ -163,12 +168,12 @@ unsafe extern "system" fn service_dispatcher(dwControl: DWORD) {
     }
 }
 
-
-fn write_to_file(arg: &str) {
+fn write(s: &str) {
     use std::io::Write;
-    use std::fs::File;
+    use std::fs::OpenOptions;
 
-    let mut file = File::create("C:\\Users\\Aliaksandr\\Desktop\\out.txt").expect("Could not open file");
-    println!("{:?}", file.write(b"Service started!"));
-    let _ = file.write(arg.as_bytes());
+    let mut file = OpenOptions::new().append(true).open("D:\\Programms\\rusty_dam\\target\\debug\\out.txt").unwrap();
+    file.write(s.as_bytes());
+    file.write(b"\n");
 }
+

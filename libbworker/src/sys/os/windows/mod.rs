@@ -17,10 +17,10 @@ mod helpers {
     use std::os::windows::ffi::{ OsStringExt, OsStrExt };
     use std::env;
     use std::ptr;
+    use std::mem;
 
-    #[allow(dead_code)]
-    pub fn to_wchar<S: AsRef<OsStr>>(s: &S) -> *const u16 {
-        s.as_ref().encode_wide().chain(Some(0).into_iter()).collect::<Vec<_>>().as_ptr()
+    pub fn to_wchar<S: AsRef<OsStr>>(s: &S) -> Vec<u16> {
+        s.as_ref().encode_wide().chain(Some(0).into_iter()).collect::<Vec<_>>()
     }
 
     pub unsafe fn from_wchar(ptr: *const u16) -> Option<String> {
@@ -58,10 +58,13 @@ mod helpers {
     fn __init() {
         unsafe {
             let os_str_crate = env::current_exe().unwrap();
-            let file_name = os_str_crate.file_stem().unwrap().to_os_string();
-            let crate_name = file_name.into_string().unwrap();
-            CRATE_NAME_UTF16 = to_wchar(&crate_name.chars().chain(Some('\0').into_iter()).collect::<String>());
+            let file_name = os_str_crate.file_stem().unwrap();
+            let crate_name = file_name.to_os_string().into_string().unwrap();
             CRATE_NAME_UTF8 = Some(crate_name);
+
+            let utf16 = to_wchar(&file_name);
+            CRATE_NAME_UTF16 = utf16.as_ptr();
+            mem::forget(utf16);
         }
     }
     

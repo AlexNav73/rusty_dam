@@ -39,8 +39,9 @@ impl Drop for EventLog {
 
 impl Write for EventLog {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        let message = String::from_utf8(buf.to_owned());
-        let strings = [ to_wchar(&message.unwrap()) ]; 
+        let message = String::from_utf8(buf.to_owned());          // FIXME: Need to awoid Vec<u8> allocation
+        let strings = [ to_wchar(&message.unwrap()).as_ptr() ];   // FIXME: Maybe I need use some iterator magic to 
+                                                                  // produce utf16 string from &[u8]
  
         unsafe {
             ReportEventW(self.handler,             // Event log handle 

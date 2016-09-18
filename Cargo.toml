@@ -3,5 +3,9 @@ name = "rusty_dam"
 version = "0.1.0"
 authors = ["AlexNav73 <fifthhorseman@mail.ru>"]
 
+[features]
+default = ["install"]
+install = []
+
 [dependencies.bworker]
 path = "libbworker"
