@@ -7,6 +7,8 @@ If you are find some bugs or way to improve code quality, please make pull reque
 
 ### 1. bworker (background worker) - crate which allow to easily create Windows Services 
 
+Status: almost done, some issues left.
+
 ```rust
 extern crate bworker;
 
@@ -25,7 +27,7 @@ impl Service for TestService {
 }
 
 fn main() {
-    launch(TestService);
+   ServiceBuilder::new().run(TestService);
 }
 ```
 
