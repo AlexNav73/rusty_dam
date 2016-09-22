@@ -6,4 +6,4 @@ authors = ["AlexNav73 <fifthhorseman@mail.ru>"]
 [dependencies]
 winapi = "*"
 advapi32-sys = "*"
-winreg = "*"
+lazy_static = "*"

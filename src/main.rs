@@ -1,7 +1,7 @@
 
 extern crate bworker;
 
-use bworker::service::{ Service, ServiceInstaller };
+use bworker::{ Service, run };
 
 struct TestService;
 
@@ -30,5 +30,5 @@ fn main() {
     use std::env;
 
     // println!("{:?}", env::current_exe().unwrap().as_os_str());
-    ServiceInstaller::run(TestService);
+    run(TestService);
 }

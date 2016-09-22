@@ -7,15 +7,6 @@ dependencies = [
 
 [[package]]
 name = "advapi32-sys"
-version = "0.1.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-dependencies = [
- "winapi 0.2.8 (registry+https://github.com/rust-lang/crates.io-index)",
- "winapi-build 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
-name = "advapi32-sys"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
@@ -28,31 +19,13 @@ name = "bworker"
 version = "0.1.0"
 dependencies = [
  "advapi32-sys 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "lazy_static 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "winapi 0.2.8 (registry+https://github.com/rust-lang/crates.io-index)",
- "winreg 0.3.5 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
-name = "kernel32-sys"
-version = "0.1.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-dependencies = [
- "winapi 0.2.8 (registry+https://github.com/rust-lang/crates.io-index)",
- "winapi-build 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
-name = "ktmw32-sys"
-version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-dependencies = [
- "winapi 0.2.8 (registry+https://github.com/rust-lang/crates.io-index)",
- "winapi-build 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
-name = "rustc-serialize"
-version = "0.3.19"
+name = "lazy_static"
+version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
@@ -65,24 +38,8 @@ name = "winapi-build"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
-[[package]]
-name = "winreg"
-version = "0.3.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-dependencies = [
- "advapi32-sys 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "kernel32-sys 0.1.4 (registry+https://github.com/rust-lang/crates.io-index)",
- "ktmw32-sys 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "rustc-serialize 0.3.19 (registry+https://github.com/rust-lang/crates.io-index)",
- "winapi 0.2.8 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
 [metadata]
-"checksum advapi32-sys 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)" = "307c92332867e586720c0222ee9d890bbe8431711efed8a1b06bc5b40fc66bd7"
 "checksum advapi32-sys 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)" = "e06588080cb19d0acb6739808aafa5f26bfb2ca015b2b6370028b44cf7cb8a9a"
-"checksum kernel32-sys 0.1.4 (registry+https://github.com/rust-lang/crates.io-index)" = "e014dab1082fd9d80ea1fa6fcb261b47ed3eb511612a14198bb507701add083e"
-"checksum ktmw32-sys 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "7f9313a869ff779ae08dd990b75a92dc06aa16d771f41305f7286649cd39a0ee"
-"checksum rustc-serialize 0.3.19 (registry+https://github.com/rust-lang/crates.io-index)" = "6159e4e6e559c81bd706afe9c8fd68f547d3e851ce12e76b1de7914bab61691b"
+"checksum lazy_static 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)" = "49247ec2a285bb3dcb23cbd9c35193c025e7251bfce77c1d5da97e6362dffe7f"
 "checksum winapi 0.2.8 (registry+https://github.com/rust-lang/crates.io-index)" = "167dc9d6949a9b857f3451275e911c3f44255842c1f7a76f33c55103a909087a"
 "checksum winapi-build 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)" = "2d315eee3b34aca4797b2da6b13ed88266e6d612562a0c46390af8299fc699bc"
-"checksum winreg 0.3.5 (registry+https://github.com/rust-lang/crates.io-index)" = "e63857fb213f619b4c4fff86b158285c76766aac7e7474967e92fb6dbbfeefe9"
