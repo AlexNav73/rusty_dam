@@ -12,7 +12,7 @@ Status: almost done, some issues left.
 ```rust
 extern crate bworker;
 
-use bworker::service::{ Service, launch };
+use bworker::service::{ Service, ServiceBuilder };
 
 struct TestService;
 
