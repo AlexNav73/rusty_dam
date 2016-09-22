@@ -31,8 +31,4 @@ fn main() {
 }
 ```
 
-> Note: Windows Service logging all his activity into EventLog. For doing that, it needed to make [Message Text File]
-> and put it aside your binary. Name for this binary should returned by your service implementation.
-
 [Rust-lang]: https://www.rust-lang.org 
-[Message Text File]: https://msdn.microsoft.com/en-us/library/windows/desktop/dd996906(v=vs.85).aspx
