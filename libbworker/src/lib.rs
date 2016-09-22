@@ -5,12 +5,8 @@ extern crate winapi;
 extern crate advapi32;
 
 use std::slice;
-use std::sync::{ Once, ONCE_INIT };
 use std::ffi::{OsStr, OsString};
 use std::os::windows::ffi::{ OsStringExt, OsStrExt };
-use std::env;
-use std::ptr;
-use std::mem;
 
 mod service;
 

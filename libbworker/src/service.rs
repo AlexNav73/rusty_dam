@@ -1,11 +1,6 @@
 
 use std::panic;
-use std::ptr;
-use std::mem;
-use std::sync::{ Arc, Mutex, Once, ONCE_INIT };
-use std::cell::UnsafeCell;
-use std::ffi::OsStr;
-use std::borrow::{Cow, Borrow};
+use std::sync::{ Arc, Mutex };
 
 use ::advapi32::{ StartServiceCtrlDispatcherW, RegisterServiceCtrlHandlerW, SetServiceStatus };
 use ::winapi::winnt::{ LPWSTR, SERVICE_WIN32_OWN_PROCESS };
@@ -13,7 +8,6 @@ use ::winapi::minwindef::DWORD;
 use ::winapi::winsvc::{
     SERVICE_STATUS, 
     SERVICE_STATUS_HANDLE, 
-    SERVICE_START_PENDING, 
     SERVICE_CONTROL_SHUTDOWN, 
     SERVICE_ACCEPT_STOP,
     SERVICE_ACCEPT_SHUTDOWN, 
@@ -96,7 +90,7 @@ impl ServiceBuilder {
 
 }
 
-fn invoke<F: FnOnce(&mut ServiceHolder)>(func: F) {
+fn lock<F: FnOnce(&mut ServiceHolder)>(func: F) {
     match SERVICE.lock() {
         Ok(ref mut s) => func(s.as_mut().unwrap()),
         Err(_) => {}
@@ -111,18 +105,18 @@ unsafe extern "system" fn start_service_proc(dwNumServicesArgs: DWORD, lpService
         let mut guard = SERVICE_NAME.lock().unwrap();
         let name = guard.as_mut().unwrap();
 
-        status_handler = unsafe { RegisterServiceCtrlHandlerW(name.as_ptr(), Some(service_dispatcher)) };
+        status_handler = RegisterServiceCtrlHandlerW(name.as_ptr(), Some(service_dispatcher));
     }
 
     if status_handler.is_null() { return; }
-    invoke(|serv| serv.handler = Some(status_handler));
+    lock(|serv| serv.handler = Some(status_handler));
 
     SetServiceStatus(status_handler, &mut service_status(SERVICE_RUNNING));
 
     write(&format!("{:?}", dwNumServicesArgs));
 
     let args = ::std::slice::from_raw_parts(lpServiceArgVectors, dwNumServicesArgs as usize).iter()
-        .map(|x| unsafe { from_wchar2(*x) })
+        .map(|x| from_wchar2(*x))
         .inspect(|x| write(&format!("{:?}", x)))
         .filter(|x| (*x).is_some())
         .map(|x| x.unwrap())
@@ -130,7 +124,7 @@ unsafe extern "system" fn start_service_proc(dwNumServicesArgs: DWORD, lpService
 
     write(&format!("{:?}", args));
     
-    invoke(|serv| {
+    lock(|serv| {
         let _ = panic::catch_unwind(panic::AssertUnwindSafe(|| { serv.service.start(args.as_slice()); }));
     });
     SetServiceStatus(status_handler, &mut service_status(SERVICE_STOPPED));
@@ -140,7 +134,7 @@ unsafe extern "system" fn start_service_proc(dwNumServicesArgs: DWORD, lpService
 unsafe extern "system" fn service_dispatcher(dwControl: DWORD) {
     match dwControl {
         SERVICE_CONTROL_STOP | SERVICE_CONTROL_SHUTDOWN => {
-            invoke(|serv| {
+            lock(|serv| {
                 let _ = panic::catch_unwind(panic::AssertUnwindSafe(|| { serv.service.stop(); }));
                 SetServiceStatus(serv.handler.unwrap(), &mut service_status(SERVICE_STOPPED));
             })
@@ -172,8 +166,8 @@ fn write(s: &str) {
 }
 
 unsafe fn from_wchar2(ptr: *const u16) -> Option<String> {
-    use std::ffi::{OsStr, OsString};
-    use std::os::windows::ffi::{ OsStringExt, OsStrExt };
+    use std::ffi::OsString;
+    use std::os::windows::ffi::OsStringExt;
 
     match ptr.is_null() {
         true => {
