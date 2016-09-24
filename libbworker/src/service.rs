@@ -1,6 +1,7 @@
 
 use std::panic;
 use std::sync::{ Arc, Mutex };
+use std::mem;
 
 use ::advapi32::{ StartServiceCtrlDispatcherW, RegisterServiceCtrlHandlerW, SetServiceStatus };
 use ::winapi::winnt::{ LPWSTR, SERVICE_WIN32_OWN_PROCESS };
@@ -19,8 +20,8 @@ use ::winapi::winsvc::{
 
 use super::{Service, to_wchar, from_wchar};
 
+static mut SERVICE: Option<*const ServiceHolder> = None;
 lazy_static! {
-    static ref SERVICE: Arc<Mutex<Option<ServiceHolder>>> = Arc::new(Mutex::new(None));
     static ref SERVICE_NAME: Arc<Mutex<Option<Vec<u16>>>> = Arc::new(Mutex::new(None));
 }
 
@@ -53,14 +54,18 @@ impl ServiceBuilder {
 
     pub fn run<S>(self, instance: S) -> Result<(), ServiceError>  
         where S: Service + 'static {
-        match SERVICE.lock() {
-            Ok(mut g) => {
-                *g = Some(ServiceHolder {
-                    service: Box::new(instance),
-                    handler: None
-                });
-            },
-            Err(_) => return Err(ServiceError::CouldNotStartService)
+
+        unsafe {
+            match SERVICE {
+                None => {
+                    let holder = Box::new(ServiceHolder {
+                        service: Box::new(instance),
+                        handler: None
+                    });
+                    SERVICE = Some(mem::transmute(holder));
+                },
+                Some(_) => return Err(ServiceError::CouldNotStartService)
+            }
         }
 
         let unicode_service_name = 
@@ -74,10 +79,10 @@ impl ServiceBuilder {
                 to_wchar(&crate_name) 
             };
         
-        let service_table_entry = unsafe { SERVICE_TABLE_ENTRYW {
+        let service_table_entry = SERVICE_TABLE_ENTRYW {
             lpServiceName: unicode_service_name.as_ptr(),
             lpServiceProc: Some(start_service_proc),
-        }};
+        };
 
         match SERVICE_NAME.lock() {
             Ok(mut g) => *g = Some(unicode_service_name),
@@ -87,13 +92,29 @@ impl ServiceBuilder {
         unsafe { StartServiceCtrlDispatcherW(&service_table_entry); } 
         Ok(())
     }
-
 }
 
-fn lock<F: FnOnce(&mut ServiceHolder)>(func: F) {
-    match SERVICE.lock() {
-        Ok(ref mut s) => func(s.as_mut().unwrap()),
-        Err(_) => {}
+fn lock<F: FnOnce(&ServiceHolder)>(func: F) {
+    unsafe {
+        match SERVICE {
+            Some(ptr) => {
+                let holder = mem::transmute(ptr);
+                func(holder)
+            },
+            None => {}
+        }
+    }
+}
+
+fn lock_mut<F: FnOnce(&mut ServiceHolder)>(func: F) {
+    unsafe {
+        match SERVICE {
+            Some(ptr) => {
+                let holder = mem::transmute(ptr);
+                func(holder)
+            },
+            None => {}
+        }
     }
 }
 
@@ -109,7 +130,7 @@ unsafe extern "system" fn start_service_proc(dwNumServicesArgs: DWORD, lpService
     }
 
     if status_handler.is_null() { return; }
-    lock(|serv| serv.handler = Some(status_handler));
+    lock_mut(|serv| serv.handler = Some(status_handler));
 
     SetServiceStatus(status_handler, &mut service_status(SERVICE_RUNNING));
 
@@ -137,7 +158,13 @@ unsafe extern "system" fn service_dispatcher(dwControl: DWORD) {
             lock(|serv| {
                 let _ = panic::catch_unwind(panic::AssertUnwindSafe(|| { serv.service.stop(); }));
                 SetServiceStatus(serv.handler.unwrap(), &mut service_status(SERVICE_STOPPED));
-            })
+            });
+            match SERVICE.take() {
+                Some(ptr) => {
+                    let _: Box<ServiceHolder> = mem::transmute(ptr);
+                },
+                None => {}
+            }
         }
         _ => { }
     }

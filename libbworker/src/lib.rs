@@ -13,8 +13,8 @@ mod service;
 pub use self::service::ServiceBuilder;
 
 pub trait Service : Sync + Send {
-    fn start(&mut self, _args: &[String]) {}
-    fn stop(&mut self) {}
+    fn start(&self, _args: &[String]) {}
+    fn stop(&self) {}
 }
 
 fn to_wchar<S: AsRef<OsStr>>(s: &S) -> Vec<u16> {

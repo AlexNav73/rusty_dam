@@ -6,7 +6,7 @@ use bworker::{ Service, ServiceBuilder };
 struct TestService;
 
 impl Service for TestService {
-    fn start(&mut self, args: &[String]) {
+    fn start(&self, args: &[String]) {
         use std::io::Write;
         use std::fs::OpenOptions;
 
@@ -17,7 +17,7 @@ impl Service for TestService {
         // }
     }
 
-    fn stop(&mut self) {
+    fn stop(&self) {
         use std::io::Write;
         use std::fs::OpenOptions;
 
