@@ -70,14 +70,15 @@ impl ServiceBuilder {
         }
 
         let unicode_service_name = 
-            if let Some(ref n) = self.name { 
-                to_wchar(n) 
-            } else { 
-                let os_str_crate = ::std::env::current_exe().unwrap();
-                let file_name = os_str_crate.file_stem().unwrap();
-                let crate_name = file_name.to_os_string().into_string().unwrap();
+            match self.name {
+                Some(ref n) => to_wchar(n),
+                None => {
+                    let os_str_crate = ::std::env::current_exe().unwrap();
+                    let file_name = os_str_crate.file_stem().unwrap();
+                    let crate_name = file_name.to_os_string().into_string().unwrap();
 
-                to_wchar(&crate_name) 
+                    to_wchar(&crate_name)
+                }
             };
         
         let service_table_entry = SERVICE_TABLE_ENTRYW {
@@ -97,24 +98,16 @@ impl ServiceBuilder {
 
 fn lock<F: FnOnce(&ServiceHolder)>(func: F) {
     unsafe {
-        match SERVICE {
-            Some(ptr) => {
-                let holder = mem::transmute(ptr);
-                func(holder)
-            },
-            None => {}
+        if let Some(ptr) = SERVICE {
+            func(mem::transmute(ptr));
         }
     }
 }
 
 fn lock_mut<F: FnOnce(&mut ServiceHolder)>(func: F) {
     unsafe {
-        match SERVICE {
-            Some(ptr) => {
-                let holder = mem::transmute(ptr);
-                func(holder)
-            },
-            None => {}
+        if let Some(ptr) = SERVICE {
+            func(mem::transmute(ptr));
         }
     }
 }
@@ -135,8 +128,6 @@ unsafe extern "system" fn start_service_proc(dwNumServicesArgs: DWORD, lpService
 
     SetServiceStatus(status_handler, &mut service_status(SERVICE_RUNNING));
 
-    write(&format!("{:?}", dwNumServicesArgs));
-
     let args = ::std::slice::from_raw_parts(lpServiceArgVectors, dwNumServicesArgs as usize).iter()
         .map(|x| from_wchar2(*x))
         .inspect(|x| write(&format!("{:?}", x)))
@@ -144,8 +135,6 @@ unsafe extern "system" fn start_service_proc(dwNumServicesArgs: DWORD, lpService
         .map(|x| x.unwrap())
         .collect::<Vec<_>>();
 
-    write(&format!("{:?}", args));
-    
     lock(|serv| {
         ::crossbeam::scope(|scope| {
             scope.spawn(|| {
@@ -162,6 +151,7 @@ unsafe extern "system" fn service_dispatcher(dwControl: DWORD) {
     match dwControl {
         SERVICE_CONTROL_STOP | SERVICE_CONTROL_SHUTDOWN => {
             lock(|serv| {
+
                 ::crossbeam::scope(|scope| {
                     scope.spawn(|| {
                         let _ = panic::catch_unwind(
@@ -169,12 +159,10 @@ unsafe extern "system" fn service_dispatcher(dwControl: DWORD) {
                     });
                 });
                 SetServiceStatus(serv.handler.unwrap(), &mut service_status(SERVICE_STOPPED));
+
             });
-            match SERVICE.take() {
-                Some(ptr) => {
-                    let _: Box<ServiceHolder> = mem::transmute(ptr);
-                },
-                None => {}
+            if let Some(ptr) = SERVICE.take() {
+                let _: Box<ServiceHolder> = mem::transmute(ptr);
             }
         }
         _ => { }
