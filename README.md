@@ -12,22 +12,50 @@ Status: almost done, some issues left.
 ```rust
 extern crate bworker;
 
-use bworker::service::{ Service, ServiceBuilder };
+use bworker::{ Service, ServiceBuilder };
 
-struct TestService;
+use std::sync::mpsc::{ channel, Receiver, Sender };
+use std::sync::Arc;
+use std::io::Write;
+use std::fs::OpenOptions;
+
+unsafe impl Send for TestService {}
+unsafe impl Sync for TestService {}
+
+struct TestService {
+    recver: Arc<Receiver<()>>,
+    sender: Arc<Sender<()>>
+}
+
+impl TestService {
+    fn new() -> TestService {
+        let (s, r) = channel(); // Will be used as Cansellation Token
+        TestService {
+            recver: Arc::new(r),
+            sender: Arc::new(s)
+        }
+    }
+}
 
 impl Service for TestService {
-    fn start(&mut self, args: &[String]) {
-        /* Insert code here ... */ 
+    fn start(&self, args: &[String]) {
+        let mut file = OpenOptions::new().append(true).open("absolute\\path\\to\\log\\file\\out.txt").unwrap();
+        file.write(b"Service start func\n");
+        loop { 
+            if self.recver.try_recv().is_ok() { break; }
+            // Buisiness logic ...
+        }
     }
 
-    fn stop(&mut self) {
-        /* Insert code here ... */ 
+    fn stop(&self) {
+        let mut file = OpenOptions::new().append(true).open("absolute\\path\\to\\log\\file\\out.txt").unwrap();
+        // Cleaning ...
+        self.sender.send(());
     }
 }
 
 fn main() {
-   ServiceBuilder::new().run(TestService);
+    ServiceBuilder::new().run(TestService::new());
 }
 ```
 
