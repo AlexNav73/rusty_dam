@@ -16,8 +16,6 @@ use bworker::{ Service, ServiceBuilder };
 
 use std::sync::mpsc::{ channel, Receiver, Sender };
 use std::sync::Arc;
-use std::io::Write;
-use std::fs::OpenOptions;
 
 unsafe impl Send for TestService {}
 unsafe impl Sync for TestService {}
@@ -39,18 +37,16 @@ impl TestService {
 
 impl Service for TestService {
     fn start(&self, args: &[String]) {
-        let mut file = OpenOptions::new().append(true).open("absolute\\path\\to\\log\\file\\out.txt").unwrap();
-        file.write(b"Service start func\n");
         loop { 
-            if self.recver.try_recv().is_ok() { break; }
             // Buisiness logic ...
+
+            if self.recver.try_recv().is_ok() { break; }
         }
     }
 
     fn stop(&self) {
-        let mut file = OpenOptions::new().append(true).open("absolute\\path\\to\\log\\file\\out.txt").unwrap();
-        // Cleaning ...
         self.sender.send(());
+        // Cleaning ...
     }
 }
 
