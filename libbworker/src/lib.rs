@@ -3,6 +3,7 @@
 extern crate lazy_static;
 extern crate winapi;
 extern crate advapi32;
+extern crate crossbeam;
 
 use std::slice;
 use std::ffi::{OsStr, OsString};

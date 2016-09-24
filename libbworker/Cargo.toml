@@ -7,3 +7,5 @@ authors = ["AlexNav73 <fifthhorseman@mail.ru>"]
 winapi = "*"
 advapi32-sys = "*"
 lazy_static = "*"
+crossbeam = "*"
+

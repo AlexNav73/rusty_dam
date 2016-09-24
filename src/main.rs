@@ -3,7 +3,26 @@ extern crate bworker;
 
 use bworker::{ Service, ServiceBuilder };
 
-struct TestService;
+use std::sync::mpsc::{ channel, Receiver, Sender };
+use std::sync::Arc;
+
+unsafe impl Send for TestService {}
+unsafe impl Sync for TestService {}
+
+struct TestService {
+    recver: Arc<Receiver<()>>,
+    sender: Arc<Sender<()>>
+}
+
+impl TestService {
+    fn new() -> TestService {
+        let (s, r) = channel();
+        TestService {
+            recver: Arc::new(r),
+            sender: Arc::new(s)
+        }
+    }
+}
 
 impl Service for TestService {
     fn start(&self, args: &[String]) {
@@ -12,9 +31,11 @@ impl Service for TestService {
 
         let mut file = OpenOptions::new().append(true).open("D:\\Programms\\rusty_dam\\target\\debug\\out.txt").unwrap();
         file.write(b"Service start func\n");
-        // for arg in args {
-        //     let _ = file.write(arg.as_bytes());
-        // }
+        loop { 
+            if self.recver.try_recv().is_ok() { break; }
+            file.write(b"Service loop\n");
+            ::std::thread::sleep(::std::time::Duration::new(1, 0));
+        }
     }
 
     fn stop(&self) {
@@ -23,9 +44,10 @@ impl Service for TestService {
 
         let mut file = OpenOptions::new().append(true).open("D:\\Programms\\rusty_dam\\target\\debug\\out.txt").unwrap();
         file.write(b"Service stop func\n");
+        self.sender.send(());
     }
 }
 
 fn main() {
-    ServiceBuilder::new().run(TestService);
+    ServiceBuilder::new().run(TestService::new());
 }

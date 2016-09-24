@@ -2,6 +2,7 @@
 use std::panic;
 use std::sync::{ Arc, Mutex };
 use std::mem;
+use std::thread;
 
 use ::advapi32::{ StartServiceCtrlDispatcherW, RegisterServiceCtrlHandlerW, SetServiceStatus };
 use ::winapi::winnt::{ LPWSTR, SERVICE_WIN32_OWN_PROCESS };
@@ -146,7 +147,12 @@ unsafe extern "system" fn start_service_proc(dwNumServicesArgs: DWORD, lpService
     write(&format!("{:?}", args));
     
     lock(|serv| {
-        let _ = panic::catch_unwind(panic::AssertUnwindSafe(|| { serv.service.start(args.as_slice()); }));
+        ::crossbeam::scope(|scope| {
+            scope.spawn(|| {
+                let _ = panic::catch_unwind(
+                    panic::AssertUnwindSafe(|| { serv.service.start(args.as_slice()); }));
+            });
+        });
     });
     SetServiceStatus(status_handler, &mut service_status(SERVICE_STOPPED));
 }
@@ -156,7 +162,12 @@ unsafe extern "system" fn service_dispatcher(dwControl: DWORD) {
     match dwControl {
         SERVICE_CONTROL_STOP | SERVICE_CONTROL_SHUTDOWN => {
             lock(|serv| {
-                let _ = panic::catch_unwind(panic::AssertUnwindSafe(|| { serv.service.stop(); }));
+                ::crossbeam::scope(|scope| {
+                    scope.spawn(|| {
+                        let _ = panic::catch_unwind(
+                            panic::AssertUnwindSafe(|| { serv.service.stop(); }));
+                    });
+                });
                 SetServiceStatus(serv.handler.unwrap(), &mut service_status(SERVICE_STOPPED));
             });
             match SERVICE.take() {
