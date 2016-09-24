@@ -55,4 +55,18 @@ fn main() {
 }
 ```
 
+Service Installation:
+
+```
+cargo build
+sc.exe create "rusty_dam" binPath="absolute\\path\\to\\service\\binnary\\rusty_dam.exe"
+```
+
+> To launch service, open Services window, find your service by name, and click "Start" button
+
+Service uninstall:
+```
+sc.exe delete "rusty_dam"
+```
+
 [Rust-lang]: https://www.rust-lang.org 
