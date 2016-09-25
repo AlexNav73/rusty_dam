@@ -5,9 +5,9 @@ If you are find some bugs or way to improve code quality, please make pull reque
 
 ## Modules 
 
-### 1. bworker (background worker) - crate which allow to easily create Windows Services 
+### 1. bworker (Background Worker) - Crate which allow to easily create Windows Services 
 
-Status: almost done, some issues left.
+> Unix daemons currently not supported!
 
 ```rust
 extern crate bworker;
@@ -41,6 +41,7 @@ impl Service for TestService {
             // Buisiness logic ...
 
             if self.recver.try_recv().is_ok() { break; }
+            ::std::thread::sleep(::std::time::Duration::new(1, 0));
         }
     }
 
