@@ -31,6 +31,12 @@ impl Service for TestService {
 
         let mut file = OpenOptions::new().append(true).open("D:\\Programms\\rusty_dam\\target\\debug\\out.txt").unwrap();
         file.write(b"Service start func\n");
+
+        for arg in args {
+            file.write(arg.as_bytes());
+            file.write(b"\n");
+        }
+
         loop { 
             if self.recver.try_recv().is_ok() { break; }
             file.write(b"Service loop\n");

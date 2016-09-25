@@ -2,7 +2,6 @@
 use std::panic;
 use std::sync::{ Arc, Mutex };
 use std::mem;
-use std::thread;
 
 use ::advapi32::{ StartServiceCtrlDispatcherW, RegisterServiceCtrlHandlerW, SetServiceStatus };
 use ::winapi::winnt::{ LPWSTR, SERVICE_WIN32_OWN_PROCESS };
@@ -44,10 +43,12 @@ pub struct ServiceBuilder {
 
 impl ServiceBuilder {
 
+    #[inline]
     pub fn new() -> ServiceBuilder {
         ServiceBuilder { name: None }
     }
 
+    #[inline]
     pub fn name<T: AsRef<str>>(&mut self, value: T) -> &mut ServiceBuilder {
         self.name = Some(value.as_ref().to_owned());
         self
@@ -128,9 +129,9 @@ unsafe extern "system" fn start_service_proc(dwNumServicesArgs: DWORD, lpService
 
     SetServiceStatus(status_handler, &mut service_status(SERVICE_RUNNING));
 
-    let args = ::std::slice::from_raw_parts(lpServiceArgVectors, dwNumServicesArgs as usize).iter()
-        .map(|x| from_wchar2(*x))
-        .inspect(|x| write(&format!("{:?}", x)))
+    let args = ::std::slice::from_raw_parts(lpServiceArgVectors, dwNumServicesArgs as usize)
+        .iter()
+        .map(|x| from_wchar(*x))
         .filter(|x| (*x).is_some())
         .map(|x| x.unwrap())
         .collect::<Vec<_>>();
@@ -179,31 +180,5 @@ fn service_status(state: DWORD) -> SERVICE_STATUS {
         dwServiceSpecificExitCode: 0,
         dwCheckPoint: 0,
         dwWaitHint: 0,
-    }
-}
-
-fn write(s: &str) {
-    use std::io::Write;
-    use std::fs::OpenOptions;
-
-    let mut file = OpenOptions::new().append(true).open("D:\\Programms\\rusty_dam\\target\\debug\\out.txt").unwrap();
-    file.write(s.as_bytes());
-    file.write(b"\n");
-}
-
-unsafe fn from_wchar2(ptr: *const u16) -> Option<String> {
-    use std::ffi::OsString;
-    use std::os::windows::ffi::OsStringExt;
-
-    match ptr.is_null() {
-        true => {
-            let len = (0..::std::isize::MAX).position(|i| *ptr.offset(i) == 0).unwrap();
-            write(&format!("len: {:?}", len));
-            let slice = ::std::slice::from_raw_parts(ptr, len);
-            write(&format!("slice: {:?}", slice));
-            write(&format!("string: {:?}", OsString::from_wide(slice).to_string_lossy().into_owned()));
-            Some(OsString::from_wide(slice).to_string_lossy().into_owned())
-        }
-        false => { None }
     }
 }
