@@ -23,7 +23,7 @@ use windows::{to_wchar, from_wchar};
 
 static mut SERVICE: Option<*const ServiceHolder> = None;
 lazy_static! {
-    static ref SERVICE_NAME: Arc<Mutex<Option<Vec<u16>>>> = Arc::new(Mutex::new(None));
+    static ref SERVICE_NAME: Vec<u16> = Vec::with_capacity(0);
 }
 
 struct ServiceHolder {
@@ -71,7 +71,7 @@ impl ServiceBuilder {
             }
         }
 
-        let unicode_service_name = 
+        let mut unicode_service_name = 
             match self.name {
                 Some(ref n) => to_wchar(n),
                 None => {
@@ -88,10 +88,7 @@ impl ServiceBuilder {
             lpServiceProc: Some(start_service_proc),
         };
 
-        match SERVICE_NAME.lock() {
-            Ok(mut g) => *g = Some(unicode_service_name),
-            Err(_) => return Err(ServiceError::CouldNotStartService)
-        }
+        SERVICE_NAME.append(&mut unicode_service_name);
 
         unsafe { StartServiceCtrlDispatcherW(&service_table_entry); } 
         Ok(())
@@ -116,14 +113,7 @@ fn lock_mut<F: FnOnce(&mut ServiceHolder)>(func: F) {
 
 #[allow(non_snake_case)]
 unsafe extern "system" fn start_service_proc(dwNumServicesArgs: DWORD, lpServiceArgVectors: *mut LPWSTR) {
-        
-    let status_handler;
-    {
-        let mut guard = SERVICE_NAME.lock().unwrap();
-        let name = guard.as_mut().unwrap();
-
-        status_handler = RegisterServiceCtrlHandlerW(name.as_ptr(), Some(service_dispatcher));
-    }
+    let status_handler = RegisterServiceCtrlHandlerW(SERVICE_NAME.as_ptr(), Some(service_dispatcher));
 
     if status_handler.is_null() { return; }
     lock_mut(|serv| serv.handler = Some(status_handler));
@@ -153,15 +143,14 @@ unsafe extern "system" fn service_dispatcher(dwControl: DWORD) {
     match dwControl {
         SERVICE_CONTROL_STOP | SERVICE_CONTROL_SHUTDOWN => {
             lock(|serv| {
-
                 ::crossbeam::scope(|scope| {
                     scope.spawn(|| {
                         let _ = panic::catch_unwind(
                             panic::AssertUnwindSafe(|| { serv.service.stop(); }));
                     });
                 });
-                SetServiceStatus(serv.handler.unwrap(), &mut service_status(SERVICE_STOPPED));
 
+                SetServiceStatus(serv.handler.unwrap(), &mut service_status(SERVICE_STOPPED));
             });
             if let Some(ptr) = SERVICE.take() {
                 let _: Box<ServiceHolder> = mem::transmute(ptr);
