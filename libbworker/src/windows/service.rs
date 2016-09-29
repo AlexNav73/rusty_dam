@@ -28,8 +28,14 @@ static mut SERVICE_NAME: Option<*const u16>      = None;
 // service status handle.
 //
 struct ServiceHolder {
-    service: Box<Service + 'static>,
+    service: *const Service,
     handler: Option<SERVICE_STATUS_HANDLE>
+}
+
+impl ServiceHolder {
+    fn service(&self) -> &Service {
+        unsafe { mem::transmute(self.service) }
+    }
 }
 
 //
@@ -39,6 +45,22 @@ struct ServiceHolder {
 //
 unsafe impl Sync for ServiceHolder {}
 unsafe impl Send for ServiceHolder {}
+
+fn lock<F: FnOnce(&ServiceHolder)>(func: F) {
+    unsafe {
+        if let Some(ptr) = SERVICE {
+            func(mem::transmute(ptr));
+        }
+    }
+}
+
+fn lock_mut<F: FnOnce(&mut ServiceHolder)>(func: F) {
+    unsafe {
+        if let Some(ptr) = SERVICE {
+            func(mem::transmute(ptr));
+        }
+    }
+}
 
 pub struct ServiceBuilder {
     name: Option<String>
@@ -57,53 +79,45 @@ impl ServiceBuilder {
         self
     }
 
-    pub fn run<S>(self, instance: S) -> Result<(), ServiceError>  
-        where S: Service + 'static {
+    pub fn run<S: Service + 'static>(self, inst: S) -> Result<(), ServiceError> {
 
         unsafe {
             match SERVICE {
                 None => {
-                    let holder = Box::new(ServiceHolder {
-                        service: Box::new(instance),
+                    let holder = ServiceHolder {
+                        service: &inst as *const _,
                         handler: None
-                    });
-                    SERVICE = Some(mem::transmute(holder));
+                    };
+                    SERVICE = Some(&holder as *const _);
                 },
                 Some(_) => return Err(ServiceError::MultInst)
             }
         }
 
-        let unicode_service_name = 
-            match self.name {
-                Some(ref n) => to_wchar(n),
-                None => to_wchar(&current_exe_name())
-            };
+        let unicode_service_name = match self.name {
+            Some(ref n) => to_wchar(n),
+            None => to_wchar(&current_exe_name())
+        };
         
         let service_table_entry = SERVICE_TABLE_ENTRYW {
             lpServiceName: unicode_service_name.as_ptr(),
             lpServiceProc: Some(start_service_proc),
         };
 
-        unsafe { SERVICE_NAME = Some(unicode_service_name.as_ptr()); }
+        unsafe { 
+            SERVICE_NAME = Some(unicode_service_name.as_ptr());
 
-        unsafe { StartServiceCtrlDispatcherW(&service_table_entry); } 
+            //
+            // Register callback, which Service Control Manager will trigger after
+            // service will be launched
+            //
+            StartServiceCtrlDispatcherW(&service_table_entry); 
+
+            SERVICE.take();
+            SERVICE_NAME.take();
+        } 
+
         Ok(())
-    }
-}
-
-fn lock<F: FnOnce(&ServiceHolder)>(func: F) {
-    unsafe {
-        if let Some(ptr) = SERVICE {
-            func(mem::transmute(ptr));
-        }
-    }
-}
-
-fn lock_mut<F: FnOnce(&mut ServiceHolder)>(func: F) {
-    unsafe {
-        if let Some(ptr) = SERVICE {
-            func(mem::transmute(ptr));
-        }
     }
 }
 
@@ -126,7 +140,7 @@ unsafe extern "system" fn start_service_proc(dwNumServicesArgs: DWORD, lpService
         ::crossbeam::scope(|scope| {
             scope.spawn(|| {
                 let _ = panic::catch_unwind(
-                    panic::AssertUnwindSafe(|| { serv.service.start(args.as_slice()); })
+                    panic::AssertUnwindSafe(|| { serv.service().start(args.as_slice()); })
                 );
             });
         });
@@ -143,15 +157,12 @@ unsafe extern "system" fn service_dispatcher(dwControl: DWORD) {
                 ::crossbeam::scope(|scope| {
                     scope.spawn(|| {
                         let _ = panic::catch_unwind(
-                            panic::AssertUnwindSafe(|| { serv.service.stop(); }));
+                            panic::AssertUnwindSafe(|| { serv.service().stop(); }));
                     });
                 });
 
                 SetServiceStatus(serv.handler.unwrap(), &mut service_status(SERVICE_STOPPED));
             });
-            if let Some(ptr) = SERVICE.take() {
-                let _: Box<ServiceHolder> = mem::transmute(ptr);
-            }
         }
         _ => { }
     }
