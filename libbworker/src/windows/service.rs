@@ -1,6 +1,5 @@
 
 use std::panic;
-use std::sync::{ Arc, Mutex };
 use std::mem;
 
 use windows::advapi32::{ StartServiceCtrlDispatcherW, RegisterServiceCtrlHandlerW, SetServiceStatus };
@@ -18,25 +17,28 @@ use windows::winapi::winsvc::{
     SERVICE_STOPPED
 };
 
-use ::Service;
-use windows::{to_wchar, from_wchar};
+use ::{ Service, ServiceError };
+use windows::{to_wchar, from_wchar, current_exe_name};
 
 static mut SERVICE: Option<*const ServiceHolder> = None;
-lazy_static! {
-    static ref SERVICE_NAME: Vec<u16> = Vec::with_capacity(0);
-}
+static mut SERVICE_NAME: Option<*const u16>      = None;
 
+//
+// Struct which contains pointer to user defined Server struct and
+// service status handle.
+//
 struct ServiceHolder {
     service: Box<Service + 'static>,
     handler: Option<SERVICE_STATUS_HANDLE>
 }
 
+//
+// This is safe, because ServiceHolder used synchronously.
+// Instance of this struct dropped when signal SERVICE_CONTROL_STOP or SERVICE_CONTROL_SHUTDOWN
+// occures.
+//
 unsafe impl Sync for ServiceHolder {}
 unsafe impl Send for ServiceHolder {}
-
-pub enum ServiceError {
-    CouldNotStartService
-}
 
 pub struct ServiceBuilder {
     name: Option<String>
@@ -67,20 +69,14 @@ impl ServiceBuilder {
                     });
                     SERVICE = Some(mem::transmute(holder));
                 },
-                Some(_) => return Err(ServiceError::CouldNotStartService)
+                Some(_) => return Err(ServiceError::MultInst)
             }
         }
 
-        let mut unicode_service_name = 
+        let unicode_service_name = 
             match self.name {
                 Some(ref n) => to_wchar(n),
-                None => {
-                    let os_str_crate = ::std::env::current_exe().unwrap();
-                    let file_name = os_str_crate.file_stem().unwrap();
-                    let crate_name = file_name.to_os_string().into_string().unwrap();
-
-                    to_wchar(&crate_name)
-                }
+                None => to_wchar(&current_exe_name())
             };
         
         let service_table_entry = SERVICE_TABLE_ENTRYW {
@@ -88,7 +84,7 @@ impl ServiceBuilder {
             lpServiceProc: Some(start_service_proc),
         };
 
-        SERVICE_NAME.append(&mut unicode_service_name);
+        unsafe { SERVICE_NAME = Some(unicode_service_name.as_ptr()); }
 
         unsafe { StartServiceCtrlDispatcherW(&service_table_entry); } 
         Ok(())
@@ -113,15 +109,14 @@ fn lock_mut<F: FnOnce(&mut ServiceHolder)>(func: F) {
 
 #[allow(non_snake_case)]
 unsafe extern "system" fn start_service_proc(dwNumServicesArgs: DWORD, lpServiceArgVectors: *mut LPWSTR) {
-    let status_handler = RegisterServiceCtrlHandlerW(SERVICE_NAME.as_ptr(), Some(service_dispatcher));
+    let status_handler = RegisterServiceCtrlHandlerW(SERVICE_NAME.unwrap(), Some(service_dispatcher));
 
     if status_handler.is_null() { return; }
     lock_mut(|serv| serv.handler = Some(status_handler));
 
     SetServiceStatus(status_handler, &mut service_status(SERVICE_RUNNING));
 
-    let args = ::std::slice::from_raw_parts(lpServiceArgVectors, dwNumServicesArgs as usize)
-        .iter()
+    let args = ::std::slice::from_raw_parts(lpServiceArgVectors, dwNumServicesArgs as usize).iter()
         .map(|x| from_wchar(*x))
         .filter(|x| (*x).is_some())
         .map(|x| x.unwrap())
@@ -131,10 +126,12 @@ unsafe extern "system" fn start_service_proc(dwNumServicesArgs: DWORD, lpService
         ::crossbeam::scope(|scope| {
             scope.spawn(|| {
                 let _ = panic::catch_unwind(
-                    panic::AssertUnwindSafe(|| { serv.service.start(args.as_slice()); }));
+                    panic::AssertUnwindSafe(|| { serv.service.start(args.as_slice()); })
+                );
             });
         });
     });
+
     SetServiceStatus(status_handler, &mut service_status(SERVICE_STOPPED));
 }
 
@@ -172,3 +169,4 @@ fn service_status(state: DWORD) -> SERVICE_STATUS {
         dwWaitHint: 0,
     }
 }
+

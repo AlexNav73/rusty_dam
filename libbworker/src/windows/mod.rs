@@ -25,3 +25,9 @@ unsafe fn from_wchar(ptr: *const u16) -> Option<String> {
     }
 }
 
+fn current_exe_name() -> String {
+    let os_str_crate = ::std::env::current_exe().unwrap();
+    let file_name = os_str_crate.file_stem().unwrap();
+    file_name.to_os_string().into_string().unwrap()
+}
+
