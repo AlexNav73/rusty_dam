@@ -10,7 +10,7 @@ use std::error::Error;
 mod windows;
 
 #[cfg(target_os = "windows")]
-pub use self::windows::ServiceBuilder;
+pub use self::windows::spawn;
 
 pub trait Service : Sync + Send {
     fn start(&self, _args: &[String]) {}
@@ -19,13 +19,13 @@ pub trait Service : Sync + Send {
 
 #[derive(Debug)]
 pub enum ServiceError {
-    MultInst
+    CantAcquireMutexLock
 }
 
 impl Error for ServiceError {
     fn description(&self) -> &'static str {
         match self {
-            &ServiceError::MultInst => "Can not start more than one service instance"
+            &ServiceError::CantAcquireMutexLock => "Can not lock service pool mutex"
         }
     }
 }

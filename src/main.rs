@@ -1,7 +1,7 @@
 
 extern crate bworker;
 
-use bworker::{ Service, ServiceBuilder };
+use bworker::{ Service, spawn };
 
 use std::sync::mpsc::{ channel, Receiver, Sender };
 use std::sync::Arc;
@@ -55,5 +55,5 @@ impl Service for TestService {
 }
 
 fn main() {
-    ServiceBuilder::new().run(TestService::new());
+    spawn(&[ TestService::new() ]);
 }

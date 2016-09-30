@@ -8,7 +8,7 @@ use std::os::windows::ffi::{ OsStringExt, OsStrExt };
 
 mod service;
 
-pub use self::service::ServiceBuilder;
+pub use self::service::spawn;
 
 fn to_wchar<S: AsRef<OsStr>>(s: &S) -> Vec<u16> {
     s.as_ref().encode_wide().chain(Some(0).into_iter()).collect::<Vec<_>>()
@@ -23,11 +23,5 @@ unsafe fn from_wchar(ptr: *const u16) -> Option<String> {
         }
         true => { None }
     }
-}
-
-fn current_exe_name() -> String {
-    let os_str_crate = ::std::env::current_exe().unwrap();
-    let file_name = os_str_crate.file_stem().unwrap();
-    file_name.to_os_string().into_string().unwrap()
 }
 
