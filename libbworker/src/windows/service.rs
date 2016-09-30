@@ -75,23 +75,26 @@ impl ServiceHolder {
     }
 }
 
-pub fn spawn<S: Service + 'static>(inst: &[S]) -> Result<(), ServiceError> {
+pub fn spawn<S: Service + 'static>(services: &[S]) -> Result<(), ServiceError> {
 
     {
         let guard = SERVICE_POOL.lock().unwrap();
-        guard.append(&mut inst.iter().map(|s| Task(s as *const _)).collect());
+        guard.append(&mut services.iter().map(|s| Task(s as *const _)).collect());
     }
 
     let os_str_crate = ::std::env::current_exe().unwrap();
     let file_name = os_str_crate.file_stem().unwrap();
     let service_name = to_wchar(&file_name.to_os_string().into_string().unwrap());
 
-    let service_table_entry = SERVICE_TABLE_ENTRYW {
-        lpServiceName: service_name.as_ptr(),
-        lpServiceProc: Some(start_service_proc),
-    };
+    let mut tasks = Vec::with_capacity(services.len());
+    for task in &mut tasks {
+        task = &mut SERVICE_TABLE_ENTRYW {
+            lpServiceName: service_name.as_ptr(),
+            lpServiceProc: Some(start_service_proc),
+        };
+    }
 
-    unsafe { StartServiceCtrlDispatcherW(&service_table_entry); } 
+    unsafe { StartServiceCtrlDispatcherW(tasks.as_slice().as_ptr()); } 
 
     Ok(())
 }
