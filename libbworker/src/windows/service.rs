@@ -1,13 +1,13 @@
 
-use std::cell::Cell;
 use std::panic;
 use std::mem;
 use std::sync::Mutex;
 use std::io::Error;
-//use std::rc::Rc;
+use std::collections::VecDeque;
 
 use windows::advapi32::{ StartServiceCtrlDispatcherW, RegisterServiceCtrlHandlerExW, SetServiceStatus };
-use windows::winapi::winnt::{ LPWSTR, SERVICE_WIN32_SHARE_PROCESS };
+use windows::winapi::winerror::NO_ERROR;
+use windows::winapi::winnt::{ LPWSTR, SERVICE_WIN32_SHARE_PROCESS }; // SERVICE_WIN32_OWN_PROCESS, 
 use windows::winapi::minwindef::{ DWORD, LPVOID };
 use windows::winapi::winsvc::{
     SERVICE_STATUS, 
@@ -26,12 +26,8 @@ use windows::winapi::winsvc::{
 use ::{ Service, ServiceError };
 use windows::{to_wchar, from_wchar};
 
-thread_local! {
-    static SERVICE: Cell<Option<ServiceHolder>> = Cell::new(None);
-}
-
 lazy_static! {
-    static ref SERVICE_POOL: Mutex<Vec<Task>> = Mutex::new(Vec::new());
+    static ref SERVICE_POOL: Mutex<VecDeque<Task>> = Mutex::new(VecDeque::new());
     static ref SERVICE_NAME: Vec<u16> = {
         let os_str_crate = ::std::env::current_exe().unwrap();
         let file_name = os_str_crate.file_stem().unwrap();
@@ -54,27 +50,19 @@ struct Task(*const Service);
 struct ServiceHolder {
     service: *const Service,
     handler: Option<SERVICE_STATUS_HANDLE>,
-    //errors: Rc<Vec<ServiceError>>
 }
 
 impl ServiceHolder {
-    fn single() -> ServiceHolder {
-        SERVICE.with(|h| if let None = h.get() {
-            let task = {
-                let mut guard = SERVICE_POOL.lock().unwrap();
-                guard.pop().unwrap()
-            };
+    fn new() -> ServiceHolder {
+        let task = {
+            let mut guard = SERVICE_POOL.lock().unwrap();
+            guard.pop_front().unwrap()
+        };
 
-            SERVICE.with(|h| h.set(Some(
-                ServiceHolder {
-                    service: task.0,
-                    handler: None,
-                    //errors: Rc::new(Vec::new())
-                }
-            )));
-        });
-
-        return SERVICE.with(|h| h.get().unwrap());
+        ServiceHolder {
+            service: task.0,
+            handler: None,
+        }
     }
 
     fn service(&self) -> &Service {
@@ -116,11 +104,11 @@ pub fn spawn<S: Service + 'static>(services: &[S]) -> Result<(), ServiceError> {
 
 #[allow(non_snake_case)]
 unsafe extern "system" fn start_service_proc(argc: DWORD, argv: *mut LPWSTR) {
-    let mut holder = ServiceHolder::single();
+    let mut holder = ServiceHolder::new();
 
     let status_handler = RegisterServiceCtrlHandlerExW(SERVICE_NAME.as_ptr(), Some(service_dispatcher), mem::transmute(&mut holder));
 
-    if status_handler.is_null() { return; }
+    assert!(!status_handler.is_null());
     holder.handler = Some(status_handler);
 
     SetServiceStatus(status_handler, &mut service_status(SERVICE_RUNNING));
@@ -135,7 +123,6 @@ unsafe extern "system" fn start_service_proc(argc: DWORD, argv: *mut LPWSTR) {
     let _ = panic::catch_unwind(panic::AssertUnwindSafe(|| { service.start(args.as_slice()); }));
 
     SetServiceStatus(status_handler, &mut service_status(SERVICE_STOPPED));
-    //SERVICE.with(|s| s.set(None));
 }
 
 #[allow(non_snake_case)]
@@ -148,18 +135,18 @@ unsafe extern "system" fn service_dispatcher(dwControl: DWORD, _: DWORD, _: LPVO
             let _ = panic::catch_unwind(panic::AssertUnwindSafe(|| { service.stop(); }));
 
             SetServiceStatus(holder.handler.unwrap(), &mut service_status(SERVICE_STOPPED));
-            //SERVICE.with(|s| s.set(None));
         }
         _ => { }
     }
 
-    0
+    NO_ERROR
 }
 
 #[inline]
 fn service_status(state: DWORD) -> SERVICE_STATUS {
     SERVICE_STATUS {
         dwServiceType: SERVICE_WIN32_SHARE_PROCESS,
+        //dwServiceType: SERVICE_WIN32_OWN_PROCESS,
         dwCurrentState: state,
         dwControlsAccepted: SERVICE_ACCEPT_STOP | SERVICE_ACCEPT_SHUTDOWN,
         dwWin32ExitCode: 0,
@@ -169,3 +156,10 @@ fn service_status(state: DWORD) -> SERVICE_STATUS {
     }
 }
 
+fn _write<S: AsRef<str>>(s: S) {
+    use std::io::Write;
+    use std::fs::OpenOptions;
+
+    let mut file = OpenOptions::new().append(true).open("D:\\Programms\\rusty_dam\\target\\debug\\out.txt").unwrap();
+    let _ = file.write(s.as_ref().as_bytes());
+}

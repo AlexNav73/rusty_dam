@@ -1,7 +1,7 @@
 
 extern crate bworker;
 
-use bworker::{ Service, spawn };
+use bworker::Service;
 
 use std::sync::mpsc::{ channel, Receiver, Sender };
 use std::sync::Arc;
@@ -28,6 +28,10 @@ impl TestService {
 }
 
 impl Service for TestService {
+    fn name(&self) -> &str {
+        &self.name
+    }
+
     fn start(&self, args: &[String]) {
         use std::io::Write;
         use std::fs::OpenOptions;
@@ -59,7 +63,7 @@ impl Service for TestService {
 }
 
 fn main() {
-    spawn(&[ 
+    bworker::spawn(&[ 
           TestService::new("D:\\Programms\\rusty_dam\\target\\debug\\out.txt".into()),
           TestService::new("D:\\Programms\\rusty_dam\\target\\debug\\out2.txt".into()),
     ]);

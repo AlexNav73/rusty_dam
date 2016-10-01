@@ -14,6 +14,7 @@ mod windows;
 pub use self::windows::spawn;
 
 pub trait Service : Sync + Send {
+    fn name(&self) -> &str;
     fn start(&self, _args: &[String]) {}
     fn stop(&self) {}
 }
@@ -21,13 +22,15 @@ pub trait Service : Sync + Send {
 #[derive(Debug)]
 pub enum ServiceError {
     CantAcquireMutexLock,
+    RegisterServiceHandlerError,
     IOError(io::Error),
 }
 
 impl Error for ServiceError {
     fn description(&self) -> &'static str {
         match self {
-            &ServiceError::CantAcquireMutexLock => "Can not lock service pool mutex",
+            &ServiceError::CantAcquireMutexLock => "Can not lock service pool mutex.",
+            &ServiceError::RegisterServiceHandlerError => "Can't register service handler.",
             _ => { "" } // TODO: Handle other errors
         }
     }
