@@ -5,21 +5,24 @@ use bworker::{ Service, spawn };
 
 use std::sync::mpsc::{ channel, Receiver, Sender };
 use std::sync::Arc;
+use std::thread;
 
 unsafe impl Send for TestService {}
 unsafe impl Sync for TestService {}
 
 struct TestService {
     recver: Arc<Receiver<()>>,
-    sender: Arc<Sender<()>>
+    sender: Arc<Sender<()>>,
+    name: String
 }
 
 impl TestService {
-    fn new() -> TestService {
+    fn new(name: String) -> TestService {
         let (s, r) = channel();
         TestService {
             recver: Arc::new(r),
-            sender: Arc::new(s)
+            sender: Arc::new(s),
+            name: name
         }
     }
 }
@@ -29,7 +32,7 @@ impl Service for TestService {
         use std::io::Write;
         use std::fs::OpenOptions;
 
-        let mut file = OpenOptions::new().append(true).open("D:\\Programms\\rusty_dam\\target\\debug\\out.txt").unwrap();
+        let mut file = OpenOptions::new().append(true).open(self.name.to_owned()).unwrap();
         file.write(b"Service start func\n");
 
         for arg in args {
@@ -39,7 +42,7 @@ impl Service for TestService {
 
         loop { 
             if self.recver.try_recv().is_ok() { break; }
-            file.write(b"Service loop\n");
+            file.write(&format!("{:?}\n", thread::current()).as_bytes());
             ::std::thread::sleep(::std::time::Duration::new(1, 0));
         }
     }
@@ -48,12 +51,16 @@ impl Service for TestService {
         use std::io::Write;
         use std::fs::OpenOptions;
 
-        let mut file = OpenOptions::new().append(true).open("D:\\Programms\\rusty_dam\\target\\debug\\out.txt").unwrap();
+        let mut file = OpenOptions::new().append(true).open(self.name.to_owned()).unwrap();
         file.write(b"Service stop func\n");
+        file.write(&format!("{:?}\n", thread::current()).as_bytes());
         self.sender.send(());
     }
 }
 
 fn main() {
-    spawn(&[ TestService::new() ]);
+    spawn(&[ 
+          TestService::new("D:\\Programms\\rusty_dam\\target\\debug\\out.txt".into()),
+          TestService::new("D:\\Programms\\rusty_dam\\target\\debug\\out2.txt".into()),
+    ]);
 }

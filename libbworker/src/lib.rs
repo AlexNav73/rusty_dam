@@ -5,6 +5,7 @@ extern crate crossbeam;
 
 use std::fmt;
 use std::error::Error;
+use std::io;
 
 #[cfg(target_os = "windows")]
 mod windows;
@@ -19,13 +20,15 @@ pub trait Service : Sync + Send {
 
 #[derive(Debug)]
 pub enum ServiceError {
-    CantAcquireMutexLock
+    CantAcquireMutexLock,
+    IOError(io::Error),
 }
 
 impl Error for ServiceError {
     fn description(&self) -> &'static str {
         match self {
-            &ServiceError::CantAcquireMutexLock => "Can not lock service pool mutex"
+            &ServiceError::CantAcquireMutexLock => "Can not lock service pool mutex",
+            _ => { "" } // TODO: Handle other errors
         }
     }
 }
