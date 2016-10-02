@@ -5,8 +5,10 @@ If you are find some bugs or way to improve code quality, please make pull reque
 
 ## Modules 
 
+### 1. bworker (Background Worker) - Crate which allow to easily create Windows Services
 
-### 1. [![Build Status](https://travis-ci.org/AlexNav73/rusty_dam.svg?branch=master)](https://travis-ci.org/AlexNav73/rusty_dam) bworker (Background Worker) - Crate which allow to easily create Windows Services
+[![Build status](https://ci.appveyor.com/api/projects/status/h153pam96und3u3v/branch/master?svg=true)](https://ci.appveyor.com/project/AlexNav73/rusty-dam/branch/master) (Windows)
+[![Build Status](https://travis-ci.org/AlexNav73/rusty_dam.svg?branch=master)](https://travis-ci.org/AlexNav73/rusty_dam) (Linux)
 
 > Unix daemons currently not supported!
 
