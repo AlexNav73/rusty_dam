@@ -15,33 +15,44 @@ If you are find some bugs or way to improve code quality, please make pull reque
 ```rust
 extern crate bworker;
 
-use bworker::{ Service, ServiceBuilder };
+use bworker::Service;
 
 use std::sync::mpsc::{ channel, Receiver, Sender };
 use std::sync::Arc;
+use std::thread;
+use std::io::Write;
+use std::fs::OpenOptions;
 
 unsafe impl Send for TestService {}
 unsafe impl Sync for TestService {}
 
 struct TestService {
     recver: Arc<Receiver<()>>,
-    sender: Arc<Sender<()>>
+    sender: Arc<Sender<()>>,
 }
 
 impl TestService {
     fn new() -> TestService {
-        let (s, r) = channel(); // Will be used as Cansellation Token
+        let (s, r) = channel();
         TestService {
             recver: Arc::new(r),
-            sender: Arc::new(s)
+            sender: Arc::new(s),
         }
     }
 }
 
 impl Service for TestService {
     fn start(&self, args: &[String]) {
+        let mut file = OpenOptions::new().append(true).open("D:\\absolute\\path\\to\\log\\file.rs").unwrap();
+        file.write(b"Service start func\n");
+
+        for arg in args {
+            file.write(arg.as_bytes());
+            file.write(b"\n");
+        }
+
         loop { 
-            // Buisiness logic ...
+            // Some business logic here ...
 
             if self.recver.try_recv().is_ok() { break; }
             ::std::thread::sleep(::std::time::Duration::new(1, 0));
@@ -49,13 +60,14 @@ impl Service for TestService {
     }
 
     fn stop(&self) {
+        let mut file = OpenOptions::new().append(true).open("D:\\absolute\\path\\to\\log\\file.rs").unwrap();
+        file.write(b"Service stop func\n");
         self.sender.send(());
-        // Cleaning ...
     }
 }
 
 fn main() {
-    ServiceBuilder::new().run(TestService::new());
+    bworker::spawn(TestService::new());
 }
 ```
 

@@ -8,7 +8,7 @@ use std::os::windows::ffi::{ OsStringExt, OsStrExt };
 
 mod service;
 
-pub use self::service::ServiceBuilder;
+pub use self::service::spawn;
 
 fn to_wchar<S: AsRef<OsStr>>(s: &S) -> Vec<u16> {
     s.as_ref().encode_wide().chain(Some(0).into_iter()).collect::<Vec<_>>()
