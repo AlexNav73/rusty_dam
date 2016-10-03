@@ -1,7 +1,6 @@
 
 #[macro_use]
 extern crate lazy_static;
-extern crate crossbeam;
 
 use std::fmt;
 use std::error::Error;
@@ -14,7 +13,6 @@ mod windows;
 pub use self::windows::spawn;
 
 pub trait Service : Sync + Send {
-    fn name(&self) -> &str;
     fn start(&self, _args: &[String]) {}
     fn stop(&self) {}
 }

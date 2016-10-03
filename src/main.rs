@@ -13,30 +13,24 @@ unsafe impl Sync for TestService {}
 struct TestService {
     recver: Arc<Receiver<()>>,
     sender: Arc<Sender<()>>,
-    name: String
 }
 
 impl TestService {
-    fn new(name: String) -> TestService {
+    fn new() -> TestService {
         let (s, r) = channel();
         TestService {
             recver: Arc::new(r),
             sender: Arc::new(s),
-            name: name
         }
     }
 }
 
 impl Service for TestService {
-    fn name(&self) -> &str {
-        &self.name
-    }
-
     fn start(&self, args: &[String]) {
         use std::io::Write;
         use std::fs::OpenOptions;
 
-        let mut file = OpenOptions::new().append(true).open(self.name.to_owned()).unwrap();
+        let mut file = OpenOptions::new().append(true).open("D:\\Programms\\rusty_dam\\libbworker\\src\\lib.rs").unwrap();
         file.write(b"Service start func\n");
 
         for arg in args {
@@ -55,7 +49,7 @@ impl Service for TestService {
         use std::io::Write;
         use std::fs::OpenOptions;
 
-        let mut file = OpenOptions::new().append(true).open(self.name.to_owned()).unwrap();
+        let mut file = OpenOptions::new().append(true).open("D:\\Programms\\rusty_dam\\libbworker\\src\\lib.rs").unwrap();
         file.write(b"Service stop func\n");
         file.write(&format!("{:?}\n", thread::current()).as_bytes());
         self.sender.send(());
@@ -63,8 +57,5 @@ impl Service for TestService {
 }
 
 fn main() {
-    bworker::spawn(&[ 
-          TestService::new("D:\\Programms\\rusty_dam\\target\\debug\\out.txt".into()),
-          TestService::new("D:\\Programms\\rusty_dam\\target\\debug\\out2.txt".into()),
-    ]);
+    bworker::spawn(TestService::new());
 }
