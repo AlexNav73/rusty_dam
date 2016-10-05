@@ -27,6 +27,3 @@ install:
     - cargo -V
 build_script:
 - cargo build
-test_script:
-    - cargo test --package core
-    - cargo test
