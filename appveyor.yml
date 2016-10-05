@@ -1,19 +1,32 @@
+platform:
+    - i686
+    - x86_64
+
 environment:
-  matrix:
-  - TARGET: nightly-x86_64-pc-windows-msvc
-  - TARGET: nightly-i686-pc-windows-msvc
-  - TARGET: nightly-x86_64-pc-windows-gnu
-  - TARGET: nightly-i686-pc-windows-gnu
-  - TARGET: 1.8.0-x86_64-pc-windows-msvc
-  - TARGET: 1.8.0-i686-pc-windows-msvc
-  - TARGET: 1.8.0-x86_64-pc-windows-gnu
-  - TARGET: 1.8.0-i686-pc-windows-gnu
+    matrix:
+        - rust_version: 1.12.0
+        - rust_version: beta
+        - rust_version: nightly
+
+cache:
+    - target -> Cargo.lock
+
 install:
-  - ps: Start-FileDownload "https://static.rust-lang.org/dist/rust-${env:TARGET}.exe" -FileName "rust.exe"
-  - ps: .\rust.exe /VERYSILENT /NORESTART /DIR="C:\rust" | Out-Null
-  - ps: $env:PATH="$env:PATH;C:\rust\bin"
-  - rustc -vV
-  - cargo -vV
-build: off
+    - ps: Start-FileDownload "https://static.rust-lang.org/dist/rust-$env:rust_version-$env:platform-pc-windows-gnu.exe" -FileName rust.exe
+    - cmd: rust.exe /VERYSILENT /NORESTART /DIR=C:\Rust
+    - ps: >-
+        if ($env:platform -eq "i686") {
+            $env:mingw = "C:\mingw"
+        } else {
+            Start-FileDownload "http://libgd.blob.core.windows.net/mingw/mingw-w64-dgn-x86_64-20141001.7z" -FileName mingw-w64.7z;
+            7z x -oC:\ mingw-w64.7z | Out-Null;
+            $env:mingw = "C:\mingw64"
+        }
+    - cmd: SET PATH=%mingw%\bin;C:\Rust\bin;%PATH%
+    - rustc -V
+    - cargo -V
+build_script:
+- cargo build
 test_script:
-  - cargo test
+    - cargo test --package core
+    - cargo test
