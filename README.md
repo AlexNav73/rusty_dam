@@ -38,9 +38,12 @@ impl TestService {
 impl Service for TestService {
 
     //
-    // Return string must match name of the service your register
+    // Return string must match name of the service you register. For example:
     // Windows: sc.exe create "TestService" binPath="absolute\\path\\to\\service\\binnary\\rusty_dam.exe"
+    // Linux: not supported for now
     // 
+    // Every service must be registered separatly using command described above
+    //
     fn name(&self) -> &str { "TestService" }
 
     fn start(&self, args: &[String]) {
