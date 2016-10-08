@@ -1,7 +1,7 @@
 
 use std::panic;
 use std::mem;
-use std::sync::{Mutex, Arc};
+use std::sync::Mutex;
 use std::io::Error;
 use std::collections::VecDeque;
 use std::ptr;
@@ -28,7 +28,7 @@ use ::{ Service, ServiceError };
 use windows::{to_wchar, from_wchar};
 
 lazy_static! {
-    static ref SERVICE_POOL: Arc<Mutex<ServicePool>> = Arc::new(Mutex::new(ServicePool::new()));
+    static ref SERVICE_POOL: Mutex<ServicePool> = Mutex::new(ServicePool::new());
 }
 
 struct ServicePool {
@@ -47,7 +47,7 @@ impl ServicePool {
     }
 
     fn deq<S: AsRef<str>>(&mut self, name: S) -> ServiceHolder {
-        // Safe, because vec length never be less than number of registered services
+        // Safe, because vec always contains at least one service with provided name
         self.services.retain(|&x| x.service().name() == name.as_ref());
         self.services[0]
     }
@@ -123,12 +123,8 @@ impl<'a> Builder<'a> {
     /// blocks until all running services will finish their jobs.
     ///
     pub fn spawn(&self) -> Result<(), ServiceError> {
-        {
-            let mutex = SERVICE_POOL.clone();
-            let mut guard = mutex.lock().unwrap();
-            for s in &self.0 {
-                guard.enq(unsafe { mem::transmute(*s) });
-            }
+        for s in &self.0 {
+            SERVICE_POOL.lock().unwrap().enq(unsafe { mem::transmute(*s) });
         }
 
         // Need one more extra space for null struct
@@ -159,13 +155,6 @@ impl<'a> Builder<'a> {
 
 }
 
-fn get_service_holder<S: AsRef<str>>(name: S) -> ServiceHolder {
-    let mutex = SERVICE_POOL.clone();
-    let mut guard = mutex.lock().unwrap();
-
-    guard.deq(name)
-}
-
 // 
 // Service main function handles services startup logic. Through it's args
 // function recieve name of service, which must be launched. First argument
@@ -180,7 +169,7 @@ unsafe extern "system" fn service_main(argc: DWORD, argv: *mut LPWSTR) {
         .map(|x| x.unwrap())
         .collect::<Vec<_>>();
 
-    let mut holder = get_service_holder(&args[0]);
+    let mut holder = { SERVICE_POOL.lock().unwrap().deq(&args[0]) };
 
     let status_handler = RegisterServiceCtrlHandlerExW(to_wchar(&args[0]).as_ptr(), Some(service_handler), mem::transmute(&mut holder));
 
