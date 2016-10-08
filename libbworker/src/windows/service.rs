@@ -1,10 +1,10 @@
 
-use std::panic;
-use std::mem;
-use std::sync::Mutex;
-use std::io::Error;
 use std::collections::VecDeque;
+use std::io::Error;
+use std::mem;
+use std::panic;
 use std::ptr;
+use std::sync::Mutex;
 
 use windows::advapi32::{ StartServiceCtrlDispatcherW, RegisterServiceCtrlHandlerExW, SetServiceStatus };
 use windows::winapi::winerror::NO_ERROR;
@@ -89,8 +89,18 @@ impl ServiceHolder {
 /// Service Control Manager.
 ///
 /// usage:
+///
 /// ```rust
 ///    use bworker::Builder;
+///    
+///    struct Service1 {}
+///    struct Service2 {}
+///
+///    impl Service for Service1 { ... }
+///    impl Service fro Service2 { ... }
+///
+///    let s1 = Service1::new();
+///    let s2 = Service2::new();
 ///
 ///    let mut b = Builder::new()
 ///        .service(&s1)
@@ -157,8 +167,9 @@ impl<'a> Builder<'a> {
 
 // 
 // Service main function handles services startup logic. Through it's args
-// function recieve name of service, which must be launched. First argument
-// points to service name, not executable name.
+// function recieve name of service, which must be launched. 
+//
+// First argument points to service name, not executable name.
 //
 #[allow(non_snake_case)]
 unsafe extern "system" fn service_main(argc: DWORD, argv: *mut LPWSTR) {
