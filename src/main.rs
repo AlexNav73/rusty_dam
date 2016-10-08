@@ -1,37 +1,38 @@
 
 extern crate bworker;
 
-use bworker::Service;
+use bworker::{ Service, Builder };
 
 use std::sync::mpsc::{ channel, Receiver, Sender };
 use std::sync::Arc;
 use std::thread;
 
-unsafe impl Send for TestService {}
-unsafe impl Sync for TestService {}
+unsafe impl Send for Service1 {}
+unsafe impl Sync for Service1 {}
 
-struct TestService {
+struct Service1 {
     recver: Arc<Receiver<()>>,
-    sender: Arc<Sender<()>>,
+    sender: Arc<Sender<()>>
 }
 
-impl TestService {
-    fn new() -> TestService {
+impl Service1 {
+    fn new() -> Service1 {
         let (s, r) = channel();
-        TestService {
+        Service1 {
             recver: Arc::new(r),
             sender: Arc::new(s),
         }
     }
 }
 
-impl Service for TestService {
+impl Service for Service1 {
+    fn name(&self) -> &str { "Service1" }
+
     fn start(&self, args: &[String]) {
         use std::io::Write;
         use std::fs::OpenOptions;
 
-        let mut file = OpenOptions::new().append(true).open("D:\\Programms\\rusty_dam\\libbworker\\src\\lib.rs").unwrap();
-        file.write(b"Service start func\n");
+        let mut file = OpenOptions::new().append(true).open("D:\\Programms\\rusty_dam\\target\\debug\\out.txt").unwrap();
 
         for arg in args {
             file.write(arg.as_bytes());
@@ -45,17 +46,57 @@ impl Service for TestService {
         }
     }
 
-    fn stop(&self) {
-        use std::io::Write;
-        use std::fs::OpenOptions;
+    fn stop(&self) { self.sender.send(()); }
+}
 
-        let mut file = OpenOptions::new().append(true).open("D:\\Programms\\rusty_dam\\libbworker\\src\\lib.rs").unwrap();
-        file.write(b"Service stop func\n");
-        file.write(&format!("{:?}\n", thread::current()).as_bytes());
-        self.sender.send(());
+unsafe impl Send for Service2 {}
+unsafe impl Sync for Service2 {}
+
+struct Service2 {
+    recver: Arc<Receiver<()>>,
+    sender: Arc<Sender<()>>,
+}
+
+impl Service2 {
+    fn new() -> Service2 {
+        let (s, r) = channel();
+        Service2 {
+            recver: Arc::new(r),
+            sender: Arc::new(s)
+        }
     }
 }
 
+impl Service for Service2 {
+    fn name(&self) -> &str { "Service2" }
+
+    fn start(&self, args: &[String]) {
+        use std::io::Write;
+        use std::fs::OpenOptions;
+
+        let mut file = OpenOptions::new().append(true).open("D:\\Programms\\rusty_dam\\target\\debug\\out2.txt").unwrap();
+
+        for arg in args {
+            file.write(arg.as_bytes());
+            file.write(b"\n");
+        }
+
+        loop { 
+            if self.recver.try_recv().is_ok() { break; }
+            file.write(&format!("{:?}\n", thread::current()).as_bytes());
+            ::std::thread::sleep(::std::time::Duration::new(1, 0));
+        }
+    }
+
+    fn stop(&self) { self.sender.send(()); }
+}
+
 fn main() {
-    bworker::spawn(TestService::new());
+    let s1 = Service1::new();
+    let s2 = Service2::new();
+
+    let mut b = Builder::new()
+        .service(&s1)
+        .service(&s2)
+        .spawn();
 }

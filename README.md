@@ -6,7 +6,6 @@ If you are find some bugs or way to improve code quality, please make pull reque
 ## Modules 
 
 ### 1. bworker (Background Worker) - Crate which allow to easily create Windows Services
-
 [![Build status](https://ci.appveyor.com/api/projects/status/12xtxvwwf3qf3coj?svg=true)](https://ci.appveyor.com/project/AlexNav73/rusty-dam) (Windows)
 [![Build Status](https://travis-ci.org/AlexNav73/rusty_dam.svg?branch=master)](https://travis-ci.org/AlexNav73/rusty_dam) (Linux)
 
@@ -15,7 +14,7 @@ If you are find some bugs or way to improve code quality, please make pull reque
 ```rust
 extern crate bworker;
 
-use bworker::Service;
+use bworker::{ Service, Builder };
 
 use std::sync::mpsc::{ channel, Receiver, Sender };
 use std::sync::Arc;
@@ -42,6 +41,16 @@ impl TestService {
 }
 
 impl Service for TestService {
+
+    //
+    // Return string must match name of the service you register. For example:
+    // Windows: sc.exe create "TestService" binPath="absolute\\path\\to\\service\\binnary\\rusty_dam.exe"
+    // Linux: not supported for now
+    // 
+    // Every service must be registered separatly using command described above
+    //
+    fn name(&self) -> &str { "TestService" }
+
     fn start(&self, args: &[String]) {
         let mut file = OpenOptions::new().append(true).open("D:\\absolute\\path\\to\\log\\file.rs").unwrap();
         file.write(b"Service start func\n");
@@ -67,7 +76,11 @@ impl Service for TestService {
 }
 
 fn main() {
-    bworker::spawn(TestService::new());
+    let s1 = Service1::new();
+
+    let mut b = Builder::new()
+        .service(&s1)
+        .spawn();
 }
 ```
 
@@ -75,14 +88,14 @@ Service Installation:
 
 ```
 cargo build
-sc.exe create "rusty_dam" binPath="absolute\\path\\to\\service\\binnary\\rusty_dam.exe"
+sc.exe create "service_name" binPath="absolute\\path\\to\\service\\binnary\\rusty_dam.exe"
 ```
 
 > To launch service, open Services window, find your service by name, and click "Start" button
 
 Service uninstall:
 ```
-sc.exe delete "rusty_dam"
+sc.exe delete "service_name"
 ```
 
 [Rust-lang]: https://www.rust-lang.org 
