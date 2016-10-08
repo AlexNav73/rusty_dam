@@ -1,7 +1,6 @@
 
 #[macro_use]
 extern crate lazy_static;
-extern crate crossbeam;
 
 use std::fmt;
 use std::error::Error;
@@ -11,11 +10,15 @@ use std::io;
 mod windows;
 
 #[cfg(target_os = "windows")]
-pub use self::windows::spawn;
+pub use self::windows::Builder;
 
+///
+/// Service trait which all custom services must implement.
+/// 
 pub trait Service : Sync + Send {
     fn name(&self) -> &str;
-    fn start(&self, _args: &[String]) {}
+    fn start(&self, args: &[String]);
+
     fn stop(&self) {}
 }
 
@@ -31,14 +34,18 @@ impl Error for ServiceError {
         match self {
             &ServiceError::CantAcquireMutexLock => "Can not lock service pool mutex.",
             &ServiceError::RegisterServiceHandlerError => "Can't register service handler.",
-            _ => { "" } // TODO: Handle other errors
+            &ServiceError::IOError(_) => "IO error occured. See more details in inner error."
         }
     }
 }
 
 impl fmt::Display for ServiceError {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        write!(f, "{}", self.description())
+        match self {
+            &ServiceError::CantAcquireMutexLock => write!(f, "{}", self.description()),
+            &ServiceError::RegisterServiceHandlerError => write!(f, "{}", self.description()),
+            &ServiceError::IOError(ref e) => write!(f, "{}", e)
+        }
     }
 }
 
