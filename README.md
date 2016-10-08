@@ -5,14 +5,14 @@ If you are find some bugs or way to improve code quality, please make pull reque
 
 ## Modules 
 
-### 1. bworker (Background Worker) - Crate which allow to easily create Windows Services 
+### 1. bworker (Background Worker) - Crate which allow to easily create Windows Services
 
 > Unix daemons currently not supported!
 
 ```rust
 extern crate bworker;
 
-use bworker::{ Service, ServiceBuilder };
+use bworker::{ Service, Builder };
 
 use std::sync::mpsc::{ channel, Receiver, Sender };
 use std::sync::Arc;
@@ -36,6 +36,13 @@ impl TestService {
 }
 
 impl Service for TestService {
+
+    //
+    // Return string must match name of the service your register
+    // Windows: sc.exe create "TestService" binPath="absolute\\path\\to\\service\\binnary\\rusty_dam.exe"
+    // 
+    fn name(&self) -> &str { "TestService" }
+
     fn start(&self, args: &[String]) {
         loop { 
             // Buisiness logic ...
@@ -52,7 +59,11 @@ impl Service for TestService {
 }
 
 fn main() {
-    ServiceBuilder::new().run(TestService::new());
+    let s1 = Service1::new();
+
+    let mut b = Builder::new()
+        .service(&s1)
+        .spawn();
 }
 ```
 
@@ -60,14 +71,14 @@ Service Installation:
 
 ```
 cargo build
-sc.exe create "rusty_dam" binPath="absolute\\path\\to\\service\\binnary\\rusty_dam.exe"
+sc.exe create "service_name" binPath="absolute\\path\\to\\service\\binnary\\rusty_dam.exe"
 ```
 
 > To launch service, open Services window, find your service by name, and click "Start" button
 
 Service uninstall:
 ```
-sc.exe delete "rusty_dam"
+sc.exe delete "service_name"
 ```
 
 [Rust-lang]: https://www.rust-lang.org 
