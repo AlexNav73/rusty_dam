@@ -1,5 +1,5 @@
 [root]
-name = "rusty_dam"
+name = "rd_service"
 version = "0.1.0"
 dependencies = [
  "bworker 0.1.0",

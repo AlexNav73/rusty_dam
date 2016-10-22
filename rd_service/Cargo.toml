@@ -1,9 +1,9 @@
 [package]
-name = "rusty_dam"
+name = "rd_service"
 version = "0.1.0"
 authors = ["AlexNav73 <fifthhorseman@mail.ru>"]
 workspace = "../"
 
 [dependencies.bworker]
-path = "../libbworker"
+path = "../rd_bworker"
 
