@@ -1,7 +1,3 @@
-[package]
-name = "rusty_dam"
-version = "0.1.0"
-authors = ["AlexNav73 <fifthhorseman@mail.ru>"]
+[workspace]
+members = ["libbworker", "local_service"]
 
-[dependencies.bworker]
-path = "libbworker"

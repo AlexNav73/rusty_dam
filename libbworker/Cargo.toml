@@ -4,7 +4,13 @@ version = "0.1.0"
 authors = ["AlexNav73 <fifthhorseman@mail.ru>"]
 
 [dependencies]
+lazy_static = "*"
+
+[target.x86_64-pc-windows-gnu.dependencies]
 winapi = "*"
 advapi32-sys = "*"
-lazy_static = "*"
+
+[target.i686-pc-windows-gnu.dependencies]
+winapi = "*"
+advapi32-sys = "*"
 
