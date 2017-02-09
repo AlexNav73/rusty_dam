@@ -1,0 +1,12 @@
+[package]
+name = "libcore"
+version = "0.1.0"
+authors = ["AlexNav73 <fifthhorseman@mail.ru>"]
+
+[dependencies]
+uuid = { version = "0.3", features = ["serde", "v4"] }
+chrono = { version = "0.2", features = ["serde"] }
+serde = "*"
+serde_derive = "*"
+serde_json = "*"
+rs-es = "*"

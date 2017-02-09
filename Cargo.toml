@@ -1,3 +1,3 @@
 [workspace]
-members = ["rd_bworker", "rd_service"]
+members = ["libcore"]
 
