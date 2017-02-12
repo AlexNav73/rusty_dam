@@ -6,7 +6,8 @@ authors = ["AlexNav73 <fifthhorseman@mail.ru>"]
 [dependencies]
 uuid = { version = "0.3", features = ["serde", "v4"] }
 chrono = { version = "0.2", features = ["serde"] }
+lazy_static = "*"
+rs-es = "*"
 serde = "*"
 serde_derive = "*"
 serde_json = "*"
-rs-es = "*"
