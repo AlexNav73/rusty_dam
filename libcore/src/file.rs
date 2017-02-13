@@ -5,7 +5,7 @@ use std::path::Path;
 use std::slice::Iter;
 use std::iter::FromIterator;
 
-use {Entity, Lazy};
+use {Entity, Lazy, Document};
 
 pub enum FileError {
     NotAFile,
@@ -35,6 +35,20 @@ impl File {
 
     pub fn file_stem(&self) -> &str {
         Path::new(&self.path).file_stem().unwrap().to_str().unwrap()
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+struct FileDto {}
+
+impl Document<File> for FileDto {
+    fn doc_type() -> &'static str {
+        "file"
+    }
+
+    fn map(self) -> File {
+        // TODO: Proper impl
+        unimplemented!()
     }
 }
 

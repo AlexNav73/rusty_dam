@@ -2,11 +2,11 @@
 use uuid::Uuid;
 use chrono::{DateTime, UTC};
 
-use {Lazy, Entity};
+use {Lazy, LazyRef, Entity, Document};
 use file::{File, FileCollection};
 use field::FieldCollection;
 use classification::ClassificationCollection;
-use es::{SystemInfo, EsDocument};
+use es::SystemInfo;
 
 pub struct Record {
     id: Uuid,
@@ -42,7 +42,12 @@ impl Record {
         match self.name {
             Some(ref n) => n,
             None => {
-                let file: &File = self.files.latest().expect("File collection is empty").into();
+                let file_ref: LazyRef<File> = self.files
+                    .latest()
+                    .expect("File collection is empty")
+                    .into();
+
+                let file: &File = file_ref.into_inner().expect("Cant load lates file");
                 file.file_stem()
             }
         }
@@ -93,14 +98,25 @@ impl From<Record> for RecordDto {
     }
 }
 
-impl EsDocument for RecordDto {
-    fn entity_type() -> &'static str {
+impl Document<Record> for RecordDto {
+    fn doc_type() -> &'static str {
         "record"
+    }
+
+    fn map(self) -> Record {
+        // TODO: Proper impl
+        unimplemented!()
     }
 }
 
 impl Entity for RecordDto {
     fn id(&self) -> Uuid {
         self.system.id
+    }
+}
+
+impl Entity for Record {
+    fn id(&self) -> Uuid {
+        self.id
     }
 }

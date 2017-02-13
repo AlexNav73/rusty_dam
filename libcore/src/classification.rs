@@ -4,10 +4,24 @@ use uuid::Uuid;
 use std::slice::Iter;
 use std::iter::FromIterator;
 
-use {Entity, Lazy};
+use {Entity, Lazy, Document};
 
 pub struct Classification {
     id: Uuid,
+}
+
+#[derive(Serialize, Deserialize)]
+struct ClassificationDto {}
+
+impl Document<Classification> for ClassificationDto {
+    fn doc_type() -> &'static str {
+        "classification"
+    }
+
+    fn map(self) -> Classification {
+        // TODO: Proper impl
+        unimplemented!()
+    }
 }
 
 impl Entity for Classification {

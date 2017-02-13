@@ -1,10 +1,12 @@
 
 use uuid::Uuid;
-use es::{EsClient, EsDocument};
+use rs_es::operations::get::GetResult;
+
+use es::EsClient;
 
 use std::sync::{Arc, Mutex};
 
-use {Entity, Lazy};
+use {Entity, Lazy, Document};
 
 lazy_static! {
     static ref CONNECTION: Arc<Mutex<Connection>> = Arc::new(Mutex::new(Connection::new()));
@@ -34,12 +36,20 @@ impl Connection {
         self.is_logged_in = true;
     }
 
-    pub fn load<T: Entity>(&mut self, id: Uuid) -> Lazy<T> {
-        unimplemented!()
+    pub fn load<T: Entity, U: Document<T>>(&mut self, id: Uuid) -> Result<Lazy<T>, ConnectionError> {
+        match self.es_client.find_by_id::<T, U>(id).send() {
+            Ok(GetResult { source: Some(doc), .. }) => {
+                let doc: U = doc;
+                let doc: T = doc.map();
+                Ok(doc.into())
+            },
+            _ => Err(ConnectionError::NotFound)
+        }
     }
 
-    pub fn save<T>(&mut self, item: &T)
-        where T: Entity + EsDocument
+    pub fn save<T, U>(&mut self, item: &T) 
+        where T: Entity + Document<U>,
+              U: Entity
     {
         if !self.is_logged_in {
             panic!("Connection not establish. You mast Login first");
@@ -47,3 +57,9 @@ impl Connection {
         self.es_client.index(item).send();
     }
 }
+
+// TODO: Rename
+enum ConnectionError {
+    NotFound
+}
+

@@ -1,29 +1,18 @@
 
-use serde::{Serialize, Deserialize};
 use uuid::Uuid;
 use rs_es::Client;
 use rs_es::operations::index::IndexOperation;
+use rs_es::operations::get::GetOperation;
 use chrono::naive::datetime::NaiveDateTime;
 
 use std::mem;
 use std::fmt;
 
-use ::Entity;
+use { Entity, Document };
 
 // TODO: Index must be named be connection name to allow
 //       multiple indices in one cluster. Sould be taken from config
 const ES_INDEX_NAME: &'static str = "rusty_dam";
-
-///
-/// All documents which needs to be stored in elasticsearch must
-/// implement this trait.
-///
-pub trait EsDocument: Serialize + Deserialize {
-    ///
-    /// Document type used by elasticsearch to distinguish documents
-    ///
-    fn entity_type() -> &'static str;
-}
 
 pub struct EsClient {
     client: Client,
@@ -35,15 +24,23 @@ impl EsClient {
         Ok(EsClient { client: Client::new(url.as_ref()).map_err(|_| EsClientError::InvalidUrl)? })
     }
 
-    pub fn index<'a, 'b, T>(&'a mut self, doc: &'b T) -> &'a mut IndexOperation<'a, 'b, T>
-        where T: EsDocument + Entity
+    pub fn index<'a, 'b, T, U>(&'a mut self, doc: &'b T) -> &'a mut IndexOperation<'a, 'b, T>
+        where T: Entity + Document<U>,
+              U: Entity
     {
         // FIXME: Remove mem::transmute when rs-es fix operations lifetime rules
         unsafe {
             mem::transmute(self.client
-                .index(ES_INDEX_NAME, T::entity_type())
+                .index(ES_INDEX_NAME, T::doc_type())
                 .with_doc(doc)
                 .with_id(doc.id().hyphenated().to_string().as_str()))
+        }
+    }
+
+    pub fn find_by_id<'a, 'b, U: Entity, T: Document<U>>(&'a mut self, id: Uuid) -> &'a mut GetOperation<'a, 'b> {
+        unsafe {
+            mem::transmute(self.client.get(ES_INDEX_NAME, id.hyphenated().to_string().as_str())
+                .with_doc_type(T::doc_type()))
         }
     }
 }
@@ -66,3 +63,4 @@ pub struct SystemInfo {
     pub modified_by: String,
     pub modified_on: NaiveDateTime,
 }
+

@@ -1,5 +1,5 @@
 
-use {Entity, Lazy};
+use {Entity, Lazy, Document};
 
 use uuid::Uuid;
 
@@ -8,6 +8,20 @@ use std::iter::FromIterator;
 
 pub struct Field {
     id: Uuid,
+}
+
+#[derive(Serialize, Deserialize)]
+struct FieldDto {}
+
+impl Document<Field> for FieldDto {
+    fn doc_type() -> &'static str {
+        "field"
+    }
+
+    fn map(self) -> Field {
+        // TODO: Proper impl
+        unimplemented!()
+    }
 }
 
 impl Entity for Field {
