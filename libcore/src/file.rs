@@ -15,7 +15,7 @@ pub enum FileError {
 
 pub struct File {
     id: Uuid,
-    path: String,
+    path: Option<String>,
 }
 
 impl File {
@@ -26,7 +26,7 @@ impl File {
             (true, true) => {
                 Ok(File {
                     id: Uuid::new_v4(),
-                    path: path.to_str().ok_or(FileError::PathDoesNotExists)?.to_string(),
+                    path: Some(path.to_str().ok_or(FileError::PathDoesNotExists)?.to_string())
                 })
             }
             (false, _) => Err(FileError::PathDoesNotExists),
@@ -35,12 +35,20 @@ impl File {
     }
 
     pub fn file_stem(&self) -> &str {
-        Path::new(&self.path).file_stem().unwrap().to_str().unwrap()
+        match self.path {
+            Some(ref p) => Path::new(p).file_stem().unwrap().to_str().unwrap(),
+            None => {
+                // TODO: Proper impl
+                unimplemented!()
+            }
+        }
     }
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct FileDto {}
+pub struct FileDto {
+    id: Uuid
+}
 
 impl Document<File> for FileDto {
     fn doc_type() -> &'static str {
@@ -48,7 +56,10 @@ impl Document<File> for FileDto {
     }
 
     fn map(self) -> File {
-        unimplemented!()
+        File {
+            id: self.id,
+            path: None
+        }
     }
 }
 

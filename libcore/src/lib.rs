@@ -6,8 +6,6 @@ extern crate serde_derive;
 extern crate serde_json;
 extern crate serde;
 
-#[macro_use]
-extern crate lazy_static;
 extern crate uuid;
 extern crate rs_es;
 extern crate chrono;
@@ -20,12 +18,14 @@ mod es;
 mod connection;
 
 use serde::{Serialize, Deserialize};
-use uuid::Uuid;
 
 use file::File;
-use connection::Connection;
 
 use std::fmt;
+
+pub use uuid::Uuid;
+pub use connection::{ Connection, ConnectionError };
+pub use record::Record;
 
 pub trait Entity where Self: Sized {
     type Dto: Document<Self>;
@@ -34,6 +34,9 @@ pub trait Entity where Self: Sized {
     ///
     fn id(&self) -> Uuid;
 
+    ///
+    /// Maps to DTO for working with database
+    ///
     fn map(&self) -> Self::Dto;
 }
 
@@ -47,6 +50,9 @@ pub trait Document<T: Entity>: Serialize + Deserialize {
     ///
     fn doc_type() -> &'static str;
 
+    ///
+    /// Maps DTO to parent type
+    ///
     fn map(self) -> T;
 }
 

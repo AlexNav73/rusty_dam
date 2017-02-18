@@ -14,7 +14,7 @@ pub struct Connection {
 }
 
 impl Connection {
-    fn new() -> Connection {
+    pub fn new() -> Connection {
         Connection {
             is_logged_in: false,
             // TODO: Url should be stored in registration
