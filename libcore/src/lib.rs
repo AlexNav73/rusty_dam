@@ -50,16 +50,16 @@ pub trait Document<T: Entity>: Serialize + Deserialize {
     fn map(self) -> T;
 }
 
-pub enum Lazy1<T: Entity> {
+pub enum Lazy<T: Entity> {
     Guid(Uuid),
     Object(Box<T>)
 }
 
-impl<T: Entity> Lazy1<T> {
+impl<T: Entity> Lazy<T> {
     pub fn unwrap(self, conn: &mut Connection) -> Result<Box<T>, LoadError> {
         match self {
-            Lazy1::Guid(id) => Ok(Box::new(conn.by_id::<T>(id).map_err(|_| LoadError::NotFound)?)),
-            Lazy1::Object(o) => Ok(o)
+            Lazy::Guid(id) => Ok(Box::new(conn.by_id::<T>(id).map_err(|_| LoadError::NotFound)?)),
+            Lazy::Object(o) => Ok(o)
         }
     }
 }

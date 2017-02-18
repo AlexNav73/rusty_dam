@@ -6,7 +6,7 @@ use std::slice::Iter;
 use std::iter::FromIterator;
 use std::collections::HashMap;
 
-use {Lazy1, Entity, Document};
+use {Lazy, Entity, Document};
 
 pub enum FileError {
     NotAFile,
