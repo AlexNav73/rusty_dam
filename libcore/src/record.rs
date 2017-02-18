@@ -2,7 +2,7 @@
 use uuid::Uuid;
 use chrono::{DateTime, UTC};
 
-use {Lazy, LazyRef, Entity, Document};
+use {Entity, Document};
 use file::{File, FileCollection};
 use field::FieldCollection;
 use classification::ClassificationCollection;
@@ -42,20 +42,22 @@ impl Record {
         match self.name {
             Some(ref n) => n,
             None => {
-                let file_ref: LazyRef<File> = self.files
-                    .latest()
-                    .expect("File collection is empty")
-                    .into();
+                //let file_ref: File = self.files
+                    //.latest()
+                    //.expect("File collection is empty");
 
-                let file: &File = file_ref.into_inner().expect("Cant load lates file");
-                file.file_stem()
+                //let file: &File = file_ref.into_inner().expect("Cant load lates file");
+                //file.file_stem()
+
+                // TODO: Proper impl
+                ""
             }
         }
     }
 }
 
 #[derive(Serialize, Deserialize)]
-struct RecordDto {
+pub struct RecordDto {
     name: String,
     fields: Vec<Uuid>,
     classifications: Vec<Uuid>,
@@ -63,40 +65,10 @@ struct RecordDto {
     system: SystemInfo,
 }
 
-impl From<RecordDto> for Record {
-    fn from(dto: RecordDto) -> Record {
-        Record {
-            id: dto.system.id,
-            name: Some(dto.name),
-            fields: dto.fields.iter().collect(),
-            classifications: dto.classifications.iter().collect(),
-            files: dto.files.iter().collect(),
-            created_by: dto.system.created_by.to_string(),
-            created_on: DateTime::from_utc(dto.system.created_on, UTC),
-            modified_by: dto.system.modified_by.to_string(),
-            modified_on: DateTime::from_utc(dto.system.modified_on, UTC),
-            is_new: false,
-        }
-    }
-}
-
-impl From<Record> for RecordDto {
-    fn from(record: Record) -> RecordDto {
-        RecordDto {
-            name: record.name().to_string(),
-            fields: record.fields.iter().map(|f| f.into()).collect(),
-            classifications: record.classifications.iter().map(|c| c.into()).collect(),
-            files: record.files.iter().map(|f| f.into()).collect(),
-            system: SystemInfo {
-                id: record.id,
-                created_by: record.created_by,
-                created_on: record.created_on.naive_utc(),
-                modified_by: record.modified_by,
-                modified_on: record.modified_on.naive_utc(),
-            },
-        }
-    }
-}
+//impl From<Record> for RecordDto {
+    //fn from(record: Record) -> RecordDto {
+    //}
+//}
 
 impl Document<Record> for RecordDto {
     fn doc_type() -> &'static str {
@@ -104,19 +76,43 @@ impl Document<Record> for RecordDto {
     }
 
     fn map(self) -> Record {
-        // TODO: Proper impl
-        unimplemented!()
-    }
-}
-
-impl Entity for RecordDto {
-    fn id(&self) -> Uuid {
-        self.system.id
+        Record {
+            id: self.system.id,
+            name: Some(self.name),
+            fields: self.fields.iter().collect(),
+            classifications: self.classifications.iter().collect(),
+            files: self.files.iter().collect(),
+            created_by: self.system.created_by.to_string(),
+            created_on: DateTime::from_utc(self.system.created_on, UTC),
+            modified_by: self.system.modified_by.to_string(),
+            modified_on: DateTime::from_utc(self.system.modified_on, UTC),
+            is_new: false,
+        }
     }
 }
 
 impl Entity for Record {
+    type Dto = RecordDto;
+
     fn id(&self) -> Uuid {
         self.id
     }
+
+    fn map(&self) -> RecordDto {
+        unimplemented!()
+        //RecordDto {
+            //name: self.name().to_string(),
+            //fields: self.fields.iter().collect(),
+            //classifications: self.classifications.iter().collect(),
+            //files: self.files.iter().collect(),
+            //system: SystemInfo {
+                //id: self.id,
+                //created_by: self.created_by,
+                //created_on: self.created_on.naive_utc(),
+                //modified_by: self.modified_by,
+                //modified_on: self.modified_on.naive_utc(),
+            //}
+        //}
+    }
 }
+

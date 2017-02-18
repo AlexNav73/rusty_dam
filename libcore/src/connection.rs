@@ -6,11 +6,7 @@ use es::EsClient;
 
 use std::sync::{Arc, Mutex};
 
-use {Entity, Lazy, Document};
-
-lazy_static! {
-    static ref CONNECTION: Arc<Mutex<Connection>> = Arc::new(Mutex::new(Connection::new()));
-}
+use {Entity, Document};
 
 pub struct Connection {
     is_logged_in: bool,
@@ -27,30 +23,22 @@ impl Connection {
         }
     }
 
-    pub fn get() -> Arc<Mutex<Connection>> {
-        CONNECTION.clone()
-    }
-
     pub fn login(&mut self) {
         // TODO: Proper impl
         self.is_logged_in = true;
     }
 
-    pub fn load<T: Entity, U: Document<T>>(&mut self, id: Uuid) -> Result<Lazy<T>, ConnectionError> {
-        match self.es_client.find_by_id::<T, U>(id).send() {
+    pub fn by_id<T: Entity>(&mut self, id: Uuid) -> Result<T, ConnectionError> {
+        match self.es_client.find_by_id::<T>(id).send() {
             Ok(GetResult { source: Some(doc), .. }) => {
-                let doc: U = doc;
-                let doc: T = doc.map();
-                Ok(doc.into())
+                let doc: T::Dto = doc;
+                Ok(doc.map())
             },
             _ => Err(ConnectionError::NotFound)
         }
     }
 
-    pub fn save<T, U>(&mut self, item: &T) 
-        where T: Entity + Document<U>,
-              U: Entity
-    {
+    pub fn save<T>(&mut self, item: &T) where T: Entity {
         if !self.is_logged_in {
             panic!("Connection not establish. You mast Login first");
         }
@@ -59,7 +47,7 @@ impl Connection {
 }
 
 // TODO: Rename
-enum ConnectionError {
+pub enum ConnectionError {
     NotFound
 }
 

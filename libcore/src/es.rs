@@ -4,6 +4,7 @@ use rs_es::Client;
 use rs_es::operations::index::IndexOperation;
 use rs_es::operations::get::GetOperation;
 use chrono::naive::datetime::NaiveDateTime;
+use serde::{ Deserialize, Serialize };
 
 use std::mem;
 use std::fmt;
@@ -24,23 +25,21 @@ impl EsClient {
         Ok(EsClient { client: Client::new(url.as_ref()).map_err(|_| EsClientError::InvalidUrl)? })
     }
 
-    pub fn index<'a, 'b, T, U>(&'a mut self, doc: &'b T) -> &'a mut IndexOperation<'a, 'b, T>
-        where T: Entity + Document<U>,
-              U: Entity
-    {
+    pub fn index<'a, 'b, T: Entity>(&'a mut self, doc: &'b T) -> &'a mut IndexOperation<'a, 'b, T::Dto> {
         // FIXME: Remove mem::transmute when rs-es fix operations lifetime rules
         unsafe {
             mem::transmute(self.client
-                .index(ES_INDEX_NAME, T::doc_type())
-                .with_doc(doc)
+                .index(ES_INDEX_NAME, T::Dto::doc_type())
+                .with_doc(&doc.map())
                 .with_id(doc.id().hyphenated().to_string().as_str()))
         }
     }
 
-    pub fn find_by_id<'a, 'b, U: Entity, T: Document<U>>(&'a mut self, id: Uuid) -> &'a mut GetOperation<'a, 'b> {
+    pub fn find_by_id<'a, 'b, T: Entity>(&'a mut self, id: Uuid) -> &'a mut GetOperation<'a, 'b> {
         unsafe {
-            mem::transmute(self.client.get(ES_INDEX_NAME, id.hyphenated().to_string().as_str())
-                .with_doc_type(T::doc_type()))
+            mem::transmute(self.client
+                           .get(ES_INDEX_NAME, id.hyphenated().to_string().as_str())
+                           .with_doc_type(T::Dto::doc_type()))
         }
     }
 }

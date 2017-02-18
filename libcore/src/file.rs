@@ -4,8 +4,9 @@ use uuid::Uuid;
 use std::path::Path;
 use std::slice::Iter;
 use std::iter::FromIterator;
+use std::collections::HashMap;
 
-use {Entity, Lazy, Document};
+use {Lazy1, Entity, Document};
 
 pub enum FileError {
     NotAFile,
@@ -39,7 +40,7 @@ impl File {
 }
 
 #[derive(Serialize, Deserialize)]
-struct FileDto {}
+pub struct FileDto {}
 
 impl Document<File> for FileDto {
     fn doc_type() -> &'static str {
@@ -47,60 +48,47 @@ impl Document<File> for FileDto {
     }
 
     fn map(self) -> File {
-        // TODO: Proper impl
         unimplemented!()
     }
 }
 
 impl Entity for File {
+    type Dto = FileDto;
+
     fn id(&self) -> Uuid {
         self.id
+    }
+
+    fn map(&self) -> FileDto {
+        unimplemented!()
     }
 }
 
 pub struct FileCollection {
-    files: Vec<Lazy<File>>,
+    //latest: Option<Uuid>,
+    //files: HashMap<Uuid, Lazy1<File>>
 }
 
 impl FileCollection {
     pub fn new() -> FileCollection {
-        FileCollection { files: Vec::new() }
+        // TODO: Proper impl
+        //FileCollection { latest: None, files: HashMap::new() }
+        FileCollection {}
     }
 
-    pub fn latest(&self) -> Option<&Lazy<File>> {
-        self.files.iter().last()
-    }
-
-    pub fn iter<'a>(&'a self) -> FileIter<'a> {
-        FileIter { inner: self.files.iter() }
-    }
-}
-
-pub struct FileIter<'a> {
-    inner: Iter<'a, Lazy<File>>,
-}
-
-impl<'a> Iterator for FileIter<'a> {
-    type Item = &'a Lazy<File>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.inner.next()
-    }
-}
-
-impl<'a> IntoIterator for &'a FileCollection {
-    type Item = &'a Lazy<File>;
-    type IntoIter = FileIter<'a>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        FileIter { inner: self.files.iter() }
-    }
+    //pub fn latest(&self) -> File {
+        //self.files[&self.latest.unwrap()] // TODO: Error handling
+            //.unwrap(self.connection)
+            //.expect("File not found")
+    //}
 }
 
 impl<'a> FromIterator<&'a Uuid> for FileCollection {
     fn from_iter<T>(iter: T) -> Self
         where T: IntoIterator<Item = &'a Uuid>
     {
-        FileCollection { files: iter.into_iter().map(|id| id.into()).collect() }
+        //FileCollection { files: iter.into_iter().map(|id| id.into()).collect() }
+        FileCollection {}
     }
 }
+
