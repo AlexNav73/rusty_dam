@@ -49,7 +49,7 @@ impl<'a> FromIterator<&'a Uuid> for ClassificationCollection {
     fn from_iter<T>(iter: T) -> Self
         where T: IntoIterator<Item = &'a Uuid>
     {
-        //ClassificationCollection { classifications: iter.into_iter().map(|id| id.into()).collect() }
+        // ClassificationCollection { classifications: iter.into_iter().map(|id| id.into()).collect() }
         ClassificationCollection {}
     }
 }

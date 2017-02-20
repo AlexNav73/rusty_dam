@@ -1,18 +1,19 @@
 
 use chrono::naive::datetime::NaiveDateTime;
-use serde::{ Deserialize, Serialize };
+use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use rs_es::Client;
-use rs_es::operations::get::{ GetOperation, GetResult };
+use rs_es::operations::get::{GetOperation, GetResult};
 use rs_es::operations::index::IndexOperation;
-use rs_es::operations::search::{ SearchQueryOperation, SearchHitsResult, SearchHitsHitsResult, SearchResult };
+use rs_es::operations::search::{SearchQueryOperation, SearchHitsResult, SearchHitsHitsResult,
+                                SearchResult};
 use rs_es::query::*;
 
 use std::mem;
 use std::fmt;
 
-use { Entity, Document };
+use {Entity, Document};
 
 // TODO: Index must be named be connection name to allow
 //       multiple indices in one cluster. Sould be taken from config
@@ -28,7 +29,9 @@ impl EsClient {
         Ok(EsClient { client: Client::new(url.as_ref()).map_err(|_| EsError::InvalidUrl)? })
     }
 
-    pub fn index<'a, 'b, T: Entity>(&'a mut self, doc: &'b T) -> &'a mut IndexOperation<'a, 'b, T::Dto> {
+    pub fn index<'a, 'b, T: Entity>(&'a mut self,
+                                    doc: &'b T)
+                                    -> &'a mut IndexOperation<'a, 'b, T::Dto> {
         // FIXME: Remove mem::transmute when rs-es fix operations lifetime rules
         unsafe {
             mem::transmute(self.client
@@ -41,25 +44,27 @@ impl EsClient {
     pub fn get<'a, 'b, T: Entity>(&'a mut self, id: Uuid) -> &'a mut GetOperation<'a, 'b> {
         unsafe {
             mem::transmute(self.client
-                           .get(ES_INDEX_NAME, id.hyphenated().to_string().as_str())
-                           .with_doc_type(T::Dto::doc_type()))
+                .get(ES_INDEX_NAME, id.hyphenated().to_string().as_str())
+                .with_doc_type(T::Dto::doc_type()))
         }
     }
 
-    pub fn search<'a, 'b, T: Entity>(&'a mut self, q: &'b Query) -> &'a mut SearchQueryOperation<'a, 'b> {
+    pub fn search<'a, 'b, T: Entity>(&'a mut self,
+                                     q: &'b Query)
+                                     -> &'a mut SearchQueryOperation<'a, 'b> {
         unsafe {
             mem::transmute(self.client
-                           .search_query()
-                           .with_indexes(&[ES_INDEX_NAME])
-                           .with_types(&[T::Dto::doc_type()])
-                           .with_query(q))
+                .search_query()
+                .with_indexes(&[ES_INDEX_NAME])
+                .with_types(&[T::Dto::doc_type()])
+                .with_query(q))
         }
     }
 }
 
 pub enum EsError {
     InvalidUrl,
-    NotFound
+    NotFound,
 }
 
 impl fmt::Debug for EsError {
@@ -78,14 +83,13 @@ pub struct SystemInfo {
 }
 
 pub struct EsRepository {
-    client: EsClient
+    client: EsClient,
 }
 
 impl EsRepository {
     pub fn new<S: AsRef<str>>(url: S) -> EsRepository {
-        EsRepository { 
-            client: EsClient::new(url.as_ref())
-                .expect("Unable to connect to elasticsearch")
+        EsRepository {
+            client: EsClient::new(url.as_ref()).expect("Unable to connect to elasticsearch"),
         }
     }
 
@@ -94,23 +98,22 @@ impl EsRepository {
             Ok(GetResult { source: Some(doc), .. }) => {
                 let doc: T::Dto = doc;
                 Ok(doc.map())
-            },
-            _ => Err(EsError::NotFound)
+            }
+            _ => Err(EsError::NotFound),
         }
     }
 
     pub fn search<T: Entity>(&mut self, query: Query) -> Result<Vec<Box<T>>, EsError> {
         match self.client.search::<T>(&query).send() {
-            Ok(SearchResult { hits: SearchHitsResult { hits: mut result , .. }, .. }) => {
-                let docs = result
-                    .drain(..)
+            Ok(SearchResult { hits: SearchHitsResult { hits: mut result, .. }, .. }) => {
+                let docs = result.drain(..)
                     .map(|h: SearchHitsHitsResult<T::Dto>| h.source.and_then(|x| Some(x)))
                     .filter(|h| h.is_some())
                     .map(|h| Box::new(h.unwrap().map()))
                     .collect::<Vec<Box<T>>>();
                 Ok(docs)
-            },
-            _ => Err(EsError::NotFound)
+            }
+            _ => Err(EsError::NotFound),
         }
     }
 
@@ -118,4 +121,3 @@ impl EsRepository {
         self.client.index(item).send();
     }
 }
-

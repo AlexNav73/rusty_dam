@@ -42,12 +42,12 @@ impl Record {
         match self.name {
             Some(ref n) => n,
             None => {
-                //let file_ref: File = self.files
-                    //.latest()
-                    //.expect("File collection is empty");
+                // let file_ref: File = self.files
+                // .latest()
+                // .expect("File collection is empty");
 
-                //let file: &File = file_ref.into_inner().expect("Cant load lates file");
-                //file.file_stem()
+                // let file: &File = file_ref.into_inner().expect("Cant load lates file");
+                // file.file_stem()
 
                 // TODO: Proper impl
                 ""
@@ -65,10 +65,10 @@ pub struct RecordDto {
     system: SystemInfo,
 }
 
-//impl From<Record> for RecordDto {
-    //fn from(record: Record) -> RecordDto {
-    //}
-//}
+// impl From<Record> for RecordDto {
+// fn from(record: Record) -> RecordDto {
+// }
+// }
 
 impl Document<Record> for RecordDto {
     fn doc_type() -> &'static str {
@@ -100,19 +100,18 @@ impl Entity for Record {
 
     fn map(&self) -> RecordDto {
         unimplemented!()
-        //RecordDto {
-            //name: self.name().to_string(),
-            //fields: self.fields.iter().collect(),
-            //classifications: self.classifications.iter().collect(),
-            //files: self.files.iter().collect(),
-            //system: SystemInfo {
-                //id: self.id,
-                //created_by: self.created_by,
-                //created_on: self.created_on.naive_utc(),
-                //modified_by: self.modified_by,
-                //modified_on: self.modified_on.naive_utc(),
-            //}
-        //}
+        // RecordDto {
+        // name: self.name().to_string(),
+        // fields: self.fields.iter().collect(),
+        // classifications: self.classifications.iter().collect(),
+        // files: self.files.iter().collect(),
+        // system: SystemInfo {
+        // id: self.id,
+        // created_by: self.created_by,
+        // created_on: self.created_on.naive_utc(),
+        // modified_by: self.modified_by,
+        // modified_on: self.modified_on.naive_utc(),
+        // }
+        // }
     }
 }
-

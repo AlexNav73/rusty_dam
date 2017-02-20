@@ -24,10 +24,12 @@ use file::File;
 use std::fmt;
 
 pub use uuid::Uuid;
-pub use connection::{ Connection, ConnectionError };
+pub use connection::{Connection, ConnectionError};
 pub use record::Record;
 
-pub trait Entity where Self: Sized {
+pub trait Entity
+    where Self: Sized
+{
     type Dto: Document<Self>;
     ///
     /// Unique identifier of entity
@@ -58,20 +60,20 @@ pub trait Document<T: Entity>: Serialize + Deserialize {
 
 pub enum Lazy<T: Entity> {
     Guid(Uuid),
-    Object(Box<T>)
+    Object(Box<T>),
 }
 
 impl<T: Entity> Lazy<T> {
     pub fn unwrap(self, conn: &mut Connection) -> Result<Box<T>, LoadError> {
         match self {
             Lazy::Guid(id) => Ok(Box::new(conn.by_id::<T>(id).map_err(|_| LoadError::NotFound)?)),
-            Lazy::Object(o) => Ok(o)
+            Lazy::Object(o) => Ok(o),
         }
     }
 }
 
 pub enum LoadError {
-    NotFound
+    NotFound,
 }
 
 impl fmt::Debug for LoadError {
@@ -81,4 +83,3 @@ impl fmt::Debug for LoadError {
         }
     }
 }
-

@@ -17,7 +17,7 @@ impl Connection {
         Connection {
             is_logged_in: false,
             // TODO: Url should be stored in registration
-            es_client: EsRepository::new("http://localhost:9200")
+            es_client: EsRepository::new("http://localhost:9200"),
         }
     }
 
@@ -40,6 +40,5 @@ impl Connection {
 
 // TODO: Rename
 pub enum ConnectionError {
-    NotFound
+    NotFound,
 }
-

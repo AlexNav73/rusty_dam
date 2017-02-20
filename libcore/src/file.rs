@@ -26,7 +26,7 @@ impl File {
             (true, true) => {
                 Ok(File {
                     id: Uuid::new_v4(),
-                    path: Some(path.to_str().ok_or(FileError::PathDoesNotExists)?.to_string())
+                    path: Some(path.to_str().ok_or(FileError::PathDoesNotExists)?.to_string()),
                 })
             }
             (false, _) => Err(FileError::PathDoesNotExists),
@@ -47,7 +47,7 @@ impl File {
 
 #[derive(Serialize, Deserialize)]
 pub struct FileDto {
-    id: Uuid
+    id: Uuid,
 }
 
 impl Document<File> for FileDto {
@@ -58,7 +58,7 @@ impl Document<File> for FileDto {
     fn map(self) -> File {
         File {
             id: self.id,
-            path: None
+            path: None,
         }
     }
 }
@@ -83,23 +83,22 @@ pub struct FileCollection {
 impl FileCollection {
     pub fn new() -> FileCollection {
         // TODO: Proper impl
-        //FileCollection { latest: None, files: HashMap::new() }
+        // FileCollection { latest: None, files: HashMap::new() }
         FileCollection {}
     }
 
-    //pub fn latest(&self) -> File {
-        //self.files[&self.latest.unwrap()] // TODO: Error handling
-            //.unwrap(self.connection)
-            //.expect("File not found")
-    //}
+    // pub fn latest(&self) -> File {
+    // self.files[&self.latest.unwrap()] // TODO: Error handling
+    // .unwrap(self.connection)
+    // .expect("File not found")
+    // }
 }
 
 impl<'a> FromIterator<&'a Uuid> for FileCollection {
     fn from_iter<T>(iter: T) -> Self
         where T: IntoIterator<Item = &'a Uuid>
     {
-        //FileCollection { files: iter.into_iter().map(|id| id.into()).collect() }
+        // FileCollection { files: iter.into_iter().map(|id| id.into()).collect() }
         FileCollection {}
     }
 }
-
