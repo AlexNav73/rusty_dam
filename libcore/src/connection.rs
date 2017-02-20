@@ -1,8 +1,7 @@
 
 use uuid::Uuid;
-use rs_es::operations::get::GetResult;
 
-use es::EsClient;
+use es::EsRepository;
 
 use std::sync::{Arc, Mutex};
 
@@ -10,7 +9,7 @@ use {Entity, Document};
 
 pub struct Connection {
     is_logged_in: bool,
-    es_client: EsClient,
+    es_client: EsRepository,
 }
 
 impl Connection {
@@ -18,8 +17,7 @@ impl Connection {
         Connection {
             is_logged_in: false,
             // TODO: Url should be stored in registration
-            es_client: EsClient::new("http://localhost:9200")
-                .expect("Unable to connect to elasticsearch"),
+            es_client: EsRepository::new("http://localhost:9200")
         }
     }
 
@@ -29,20 +27,21 @@ impl Connection {
     }
 
     pub fn by_id<T: Entity>(&mut self, id: Uuid) -> Result<T, ConnectionError> {
-        match self.es_client.find_by_id::<T>(id).send() {
-            Ok(GetResult { source: Some(doc), .. }) => {
-                let doc: T::Dto = doc;
-                Ok(doc.map())
-            },
-            _ => Err(ConnectionError::NotFound)
-        }
+        unimplemented!()
+        //match self.es_client.find_by_id::<T>(id).send() {
+            //Ok(GetResult { source: Some(doc), .. }) => {
+                //let doc: T::Dto = doc;
+                //Ok(doc.map())
+            //},
+            //_ => Err(ConnectionError::NotFound)
+        //}
     }
 
-    pub fn save<T>(&mut self, item: &T) where T: Entity {
+    pub fn save<T: Entity>(&mut self, item: &T) {
         if !self.is_logged_in {
             panic!("Connection not establish. You mast Login first");
         }
-        self.es_client.index(item).send();
+        self.es_client.index(item);
     }
 }
 
