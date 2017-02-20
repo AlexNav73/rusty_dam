@@ -27,14 +27,7 @@ impl Connection {
     }
 
     pub fn by_id<T: Entity>(&mut self, id: Uuid) -> Result<T, ConnectionError> {
-        unimplemented!()
-        //match self.es_client.find_by_id::<T>(id).send() {
-            //Ok(GetResult { source: Some(doc), .. }) => {
-                //let doc: T::Dto = doc;
-                //Ok(doc.map())
-            //},
-            //_ => Err(ConnectionError::NotFound)
-        //}
+        self.es_client.get::<T>(id).map_err(|e| ConnectionError::NotFound)
     }
 
     pub fn save<T: Entity>(&mut self, item: &T) {
