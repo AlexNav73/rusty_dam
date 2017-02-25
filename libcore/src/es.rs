@@ -4,11 +4,15 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use rs_es::Client;
+use rs_es::query::*;
 use rs_es::operations::get::{GetOperation, GetResult};
 use rs_es::operations::index::IndexOperation;
-use rs_es::operations::search::{SearchQueryOperation, SearchHitsResult, SearchHitsHitsResult,
-                                SearchResult};
-use rs_es::query::*;
+use rs_es::operations::search::{
+    SearchQueryOperation,
+    SearchHitsResult,
+    SearchHitsHitsResult,
+    SearchResult
+};
 
 use std::mem;
 use std::fmt;
