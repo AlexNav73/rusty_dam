@@ -1,23 +1,22 @@
 
 use chrono::naive::datetime::NaiveDateTime;
-use serde::{Deserialize, Serialize};
 use uuid::Uuid;
+
+use std::rc::Rc;
+use std::cell::RefCell;
 
 use rs_es::Client;
 use rs_es::query::*;
 use rs_es::operations::get::{GetOperation, GetResult};
 use rs_es::operations::index::IndexOperation;
-use rs_es::operations::search::{
-    SearchQueryOperation,
-    SearchHitsResult,
-    SearchHitsHitsResult,
-    SearchResult
-};
+use rs_es::operations::search::{SearchQueryOperation, SearchHitsResult, SearchHitsHitsResult,
+                                SearchResult};
 
 use std::mem;
 use std::fmt;
 
 use {Entity, Document};
+use connection::Connection;
 
 // TODO: Index must be named be connection name to allow
 //       multiple indices in one cluster. Sould be taken from config
@@ -97,23 +96,29 @@ impl EsRepository {
         }
     }
 
-    pub fn get<T: Entity>(&mut self, id: Uuid) -> Result<T, EsError> {
+    pub fn get<T: Entity>(&mut self,
+                          conn: Rc<RefCell<Connection>>,
+                          id: Uuid)
+                          -> Result<T, EsError> {
         match self.client.get::<T>(id).send() {
             Ok(GetResult { source: Some(doc), .. }) => {
                 let doc: T::Dto = doc;
-                Ok(doc.map())
+                Ok(doc.map(conn))
             }
             _ => Err(EsError::NotFound),
         }
     }
 
-    pub fn search<T: Entity>(&mut self, query: Query) -> Result<Vec<Box<T>>, EsError> {
+    pub fn search<T: Entity>(&mut self,
+                             conn: Rc<RefCell<Connection>>,
+                             query: Query)
+                             -> Result<Vec<Box<T>>, EsError> {
         match self.client.search::<T>(&query).send() {
             Ok(SearchResult { hits: SearchHitsResult { hits: mut result, .. }, .. }) => {
                 let docs = result.drain(..)
                     .map(|h: SearchHitsHitsResult<T::Dto>| h.source.and_then(|x| Some(x)))
                     .filter(|h| h.is_some())
-                    .map(|h| Box::new(h.unwrap().map()))
+                    .map(|h| Box::new(h.unwrap().map(conn.clone())))
                     .collect::<Vec<Box<T>>>();
                 Ok(docs)
             }
@@ -122,6 +127,6 @@ impl EsRepository {
     }
 
     pub fn index<T: Entity>(&mut self, item: &T) {
-        self.client.index(item).send();
+        let _ = self.client.index(item).send();
     }
 }

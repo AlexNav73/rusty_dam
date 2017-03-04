@@ -16,15 +16,16 @@ mod field;
 mod classification;
 mod es;
 mod connection;
+mod collections;
 
 use serde::{Serialize, Deserialize};
 
-use file::File;
-
+use std::cell::RefCell;
 use std::fmt;
+use std::rc::Rc;
 
 pub use uuid::Uuid;
-pub use connection::{Connection, ConnectionError};
+pub use connection::Connection;
 pub use record::Record;
 
 pub trait Entity
@@ -55,7 +56,7 @@ pub trait Document<T: Entity>: Serialize + Deserialize {
     ///
     /// Maps DTO to parent type
     ///
-    fn map(self) -> T;
+    fn map(self, conn: Rc<RefCell<Connection>>) -> T;
 }
 
 pub enum Lazy<T: Entity> {
@@ -64,9 +65,11 @@ pub enum Lazy<T: Entity> {
 }
 
 impl<T: Entity> Lazy<T> {
-    pub fn unwrap(self, conn: &mut Connection) -> Result<Box<T>, LoadError> {
+    pub fn unwrap(self, conn: Rc<RefCell<Connection>>) -> Result<Box<T>, LoadError> {
         match self {
-            Lazy::Guid(id) => Ok(Box::new(conn.by_id::<T>(id).map_err(|_| LoadError::NotFound)?)),
+            Lazy::Guid(id) => {
+                Ok(Box::new(Connection::by_id::<T>(conn, id).map_err(|_| LoadError::NotFound)?))
+            }
             Lazy::Object(o) => Ok(o),
         }
     }
@@ -83,3 +86,4 @@ impl fmt::Debug for LoadError {
         }
     }
 }
+

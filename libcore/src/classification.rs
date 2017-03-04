@@ -1,25 +1,32 @@
 
 use uuid::Uuid;
 
-use std::slice::Iter;
-use std::iter::FromIterator;
+use std::cell::RefCell;
+use std::rc::Rc;
 
 use {Entity, Document};
+use connection::Connection;
 
 pub struct Classification {
     id: Uuid,
+    connection: Rc<RefCell<Connection>>
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct ClassificationDto {}
+pub struct ClassificationDto {
+    id: Uuid
+}
 
 impl Document<Classification> for ClassificationDto {
     fn doc_type() -> &'static str {
         "classification"
     }
 
-    fn map(self) -> Classification {
-        unimplemented!()
+    fn map(self, conn: Rc<RefCell<Connection>>) -> Classification {
+        Classification {
+            id: self.id,
+            connection: conn
+        }
     }
 }
 
@@ -31,25 +38,9 @@ impl Entity for Classification {
     }
 
     fn map(&self) -> ClassificationDto {
-        unimplemented!()
+        ClassificationDto {
+            id: self.id
+        }
     }
 }
 
-pub struct ClassificationCollection {
-    //classifications: Vec<Lazy<Classification>>,
-}
-
-impl ClassificationCollection {
-    pub fn new() -> ClassificationCollection {
-        ClassificationCollection {}
-    }
-}
-
-impl<'a> FromIterator<&'a Uuid> for ClassificationCollection {
-    fn from_iter<T>(iter: T) -> Self
-        where T: IntoIterator<Item = &'a Uuid>
-    {
-        // ClassificationCollection { classifications: iter.into_iter().map(|id| id.into()).collect() }
-        ClassificationCollection {}
-    }
-}

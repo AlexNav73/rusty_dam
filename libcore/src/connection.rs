@@ -1,11 +1,12 @@
 
 use uuid::Uuid;
 
-use es::EsRepository;
+use std::rc::Rc;
+use std::cell::RefCell;
 
-use std::sync::{Arc, Mutex};
+use es::{EsRepository, EsError};
 
-use {Entity, Document};
+use Entity;
 
 pub struct Connection {
     is_logged_in: bool,
@@ -26,19 +27,35 @@ impl Connection {
         self.is_logged_in = true;
     }
 
-    pub fn by_id<T: Entity>(&mut self, id: Uuid) -> Result<T, ConnectionError> {
-        self.es_client.get::<T>(id).map_err(|e| ConnectionError::NotFound)
+    pub fn authorized(&self) -> bool {
+        self.is_logged_in
     }
 
-    pub fn save<T: Entity>(&mut self, item: &T) {
-        if !self.is_logged_in {
+    pub fn by_id<T: Entity>(conn: Rc<RefCell<Connection>>, id: Uuid) -> Result<T, EsError> {
+        let mut this = conn.borrow_mut();
+        this.es_client.get::<T>(conn.clone(), id).map_err(|_| EsError::NotFound)
+    }
+
+    pub fn save<T: Entity>(conn: Rc<RefCell<Connection>>, item: &T) {
+        if !conn.borrow().authorized() {
             panic!("Connection not establish. You mast Login first");
         }
-        self.es_client.index(item);
+        conn.borrow_mut().es_client.index(item);
     }
 }
 
-// TODO: Rename
-pub enum ConnectionError {
-    NotFound,
+pub struct App(Rc<RefCell<Connection>>);
+
+impl App {
+    fn new() -> App {
+        App(Rc::new(RefCell::new(Connection::new())))
+    }
+
+    fn get<T: Entity>(&self, id: Uuid) -> Result<T, EsError> {
+        Connection::by_id(self.0.clone(), id)
+    }
+
+    fn save<T: Entity>(&self, item: &T) {
+        Connection::save(self.0.clone(), item)
+    }
 }

@@ -1,25 +1,32 @@
 
-use {Entity, Document};
-
 use uuid::Uuid;
 
-use std::slice::Iter;
-use std::iter::FromIterator;
+use std::rc::Rc;
+use std::cell::RefCell;
+
+use {Entity, Document};
+use connection::Connection;
 
 pub struct Field {
     id: Uuid,
+    connection: Rc<RefCell<Connection>>
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct FieldDto {}
+pub struct FieldDto {
+    id: Uuid
+}
 
 impl Document<Field> for FieldDto {
     fn doc_type() -> &'static str {
         "field"
     }
 
-    fn map(self) -> Field {
-        unimplemented!()
+    fn map(self, conn: Rc<RefCell<Connection>>) -> Field {
+        Field {
+            id: self.id,
+            connection: conn
+        }
     }
 }
 
@@ -31,25 +38,9 @@ impl Entity for Field {
     }
 
     fn map(&self) -> FieldDto {
-        unimplemented!()
+        FieldDto {
+            id: self.id
+        }
     }
 }
 
-pub struct FieldCollection {
-    //fields: Vec<Lazy<Field>>,
-}
-
-impl FieldCollection {
-    pub fn new() -> FieldCollection {
-        FieldCollection {}
-    }
-}
-
-impl<'a> FromIterator<&'a Uuid> for FieldCollection {
-    fn from_iter<T>(iter: T) -> Self
-        where T: IntoIterator<Item = &'a Uuid>
-    {
-        // FieldCollection { fields: iter.into_iter().map(|id| id.into()).collect() }
-        FieldCollection {}
-    }
-}

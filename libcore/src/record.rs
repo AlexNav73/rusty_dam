@@ -2,11 +2,18 @@
 use uuid::Uuid;
 use chrono::{DateTime, UTC};
 
+use std::rc::Rc;
+use std::cell::RefCell;
+
 use {Entity, Document};
-use file::{File, FileCollection};
-use field::FieldCollection;
-use classification::ClassificationCollection;
+use file::File;
 use es::SystemInfo;
+use connection::Connection;
+
+use collections::EntityCollection;
+use collections::fields::FieldCollection;
+use collections::files::FileCollection;
+use collections::classifications::ClassificationCollection;
 
 pub struct Record {
     id: Uuid,
@@ -19,10 +26,11 @@ pub struct Record {
     modified_by: String,
     modified_on: DateTime<UTC>,
     is_new: bool,
+    connection: Rc<RefCell<Connection>>,
 }
 
 impl Record {
-    fn create() -> Record {
+    fn create(conn: Rc<RefCell<Connection>>) -> Record {
         Record {
             id: Uuid::new_v4(),
             name: None,
@@ -35,6 +43,7 @@ impl Record {
             created_by: "".to_string(),
             modified_by: "".to_string(),
             is_new: true,
+            connection: conn,
         }
     }
 
@@ -75,7 +84,7 @@ impl Document<Record> for RecordDto {
         "record"
     }
 
-    fn map(self) -> Record {
+    fn map(self, conn: Rc<RefCell<Connection>>) -> Record {
         Record {
             id: self.system.id,
             name: Some(self.name),
@@ -87,6 +96,7 @@ impl Document<Record> for RecordDto {
             modified_by: self.system.modified_by.to_string(),
             modified_on: DateTime::from_utc(self.system.modified_on, UTC),
             is_new: false,
+            connection: conn,
         }
     }
 }
@@ -99,19 +109,18 @@ impl Entity for Record {
     }
 
     fn map(&self) -> RecordDto {
-        unimplemented!()
-        // RecordDto {
-        // name: self.name().to_string(),
-        // fields: self.fields.iter().collect(),
-        // classifications: self.classifications.iter().collect(),
-        // files: self.files.iter().collect(),
-        // system: SystemInfo {
-        // id: self.id,
-        // created_by: self.created_by,
-        // created_on: self.created_on.naive_utc(),
-        // modified_by: self.modified_by,
-        // modified_on: self.modified_on.naive_utc(),
-        // }
-        // }
+        RecordDto {
+            name: self.name().to_string(),
+            fields: self.fields.ids().collect(),
+            classifications: self.classifications.ids().collect(),
+            files: self.files.ids().collect(),
+            system: SystemInfo {
+                id: self.id,
+                created_by: self.created_by.to_string(),
+                created_on: self.created_on.naive_utc(),
+                modified_by: self.modified_by.to_string(),
+                modified_on: self.modified_on.naive_utc(),
+            }
+        }
     }
 }

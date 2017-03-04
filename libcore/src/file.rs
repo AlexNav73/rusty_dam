@@ -1,12 +1,12 @@
 
 use uuid::Uuid;
 
+use std::cell::RefCell;
 use std::path::Path;
-use std::slice::Iter;
-use std::iter::FromIterator;
-use std::collections::HashMap;
+use std::rc::Rc;
 
-use {Lazy, Entity, Document};
+use {Entity, Document};
+use connection::Connection;
 
 pub enum FileError {
     NotAFile,
@@ -16,22 +16,24 @@ pub enum FileError {
 pub struct File {
     id: Uuid,
     path: Option<String>,
+    connection: Rc<RefCell<Connection>>,
 }
 
 impl File {
-    pub fn new<P: AsRef<Path>>(path: P) -> Result<File, FileError> {
-        let path = path.as_ref();
+    pub fn new<P: AsRef<Path>>(_path: P) -> Result<File, FileError> {
+        unimplemented!()
+/*        let path = path.as_ref();*/
 
-        match (path.exists(), path.is_file()) {
-            (true, true) => {
-                Ok(File {
-                    id: Uuid::new_v4(),
-                    path: Some(path.to_str().ok_or(FileError::PathDoesNotExists)?.to_string()),
-                })
-            }
-            (false, _) => Err(FileError::PathDoesNotExists),
-            (true, false) => Err(FileError::NotAFile),
-        }
+        //match (path.exists(), path.is_file()) {
+            //(true, true) => {
+                //Ok(File {
+                    //id: Uuid::new_v4(),
+                    //path: Some(path.to_str().ok_or(FileError::PathDoesNotExists)?.to_string()),
+                //})
+            //}
+            //(false, _) => Err(FileError::PathDoesNotExists),
+            //(true, false) => Err(FileError::NotAFile),
+        /*}*/
     }
 
     pub fn file_stem(&self) -> &str {
@@ -55,10 +57,11 @@ impl Document<File> for FileDto {
         "file"
     }
 
-    fn map(self) -> File {
+    fn map(self, conn: Rc<RefCell<Connection>>) -> File {
         File {
             id: self.id,
             path: None,
+            connection: conn,
         }
     }
 }
@@ -71,34 +74,7 @@ impl Entity for File {
     }
 
     fn map(&self) -> FileDto {
-        unimplemented!()
+        FileDto { id: self.id }
     }
 }
 
-pub struct FileCollection {
-    //latest: Option<Uuid>,
-    //files: HashMap<Uuid, Lazy1<File>>
-}
-
-impl FileCollection {
-    pub fn new() -> FileCollection {
-        // TODO: Proper impl
-        // FileCollection { latest: None, files: HashMap::new() }
-        FileCollection {}
-    }
-
-    // pub fn latest(&self) -> File {
-    // self.files[&self.latest.unwrap()] // TODO: Error handling
-    // .unwrap(self.connection)
-    // .expect("File not found")
-    // }
-}
-
-impl<'a> FromIterator<&'a Uuid> for FileCollection {
-    fn from_iter<T>(iter: T) -> Self
-        where T: IntoIterator<Item = &'a Uuid>
-    {
-        // FileCollection { files: iter.into_iter().map(|id| id.into()).collect() }
-        FileCollection {}
-    }
-}
