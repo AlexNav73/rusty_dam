@@ -1,24 +1,38 @@
 
 use uuid::Uuid;
 
+use std::cell::RefCell;
 use std::collections::HashMap;
-use std::iter::FromIterator;
+use std::rc::Rc;
 
 use Lazy;
+use collections::{EntityCollection, Ids, IterMut};
+use connection::Connection;
 use file::File;
-use collections::{EntityCollection, Ids};
 
 pub struct FileCollection {
     latest: Option<Uuid>,
     files: HashMap<Uuid, Lazy<File>>,
+    connection: Rc<RefCell<Connection>>,
 }
 
 impl FileCollection {
-    pub fn new() -> FileCollection {
-        // TODO: Proper impl
+    pub fn new(conn: Rc<RefCell<Connection>>) -> FileCollection
+    {
         FileCollection {
             latest: None,
             files: HashMap::new(),
+            connection: conn
+        }
+    }
+
+    pub fn from_iter<'a, T>(iter: T, conn: Rc<RefCell<Connection>>) -> FileCollection
+        where T: IntoIterator<Item = &'a Uuid>
+    {
+        FileCollection {
+            latest: None,
+            files: iter.into_iter().map(|&id| (id, Lazy::Guid(id))).collect(),
+            connection: conn
         }
     }
 
@@ -33,16 +47,9 @@ impl EntityCollection<File> for FileCollection {
     fn ids(&self) -> Ids<File> {
         Ids::new(self.files.keys())
     }
-}
 
-impl<'a> FromIterator<&'a Uuid> for FileCollection {
-    fn from_iter<T>(iter: T) -> Self
-        where T: IntoIterator<Item = &'a Uuid>
-    {
-        FileCollection {
-            latest: None,
-            files: iter.into_iter().map(|&id| (id, Lazy::Guid(id))).collect(),
-        }
+    fn iter_mut(&mut self) -> IterMut<File> {
+        IterMut::new(self.connection.clone(), self.files.values_mut())
     }
 }
 

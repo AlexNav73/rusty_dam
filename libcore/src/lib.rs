@@ -65,12 +65,15 @@ pub enum Lazy<T: Entity> {
 }
 
 impl<T: Entity> Lazy<T> {
-    pub fn unwrap(self, conn: Rc<RefCell<Connection>>) -> Result<Box<T>, LoadError> {
+    pub fn unwrap(&mut self, conn: Rc<RefCell<Connection>>) -> Result<&T, LoadError> {
         match self {
-            Lazy::Guid(id) => {
-                Ok(Box::new(Connection::by_id::<T>(conn, id).map_err(|_| LoadError::NotFound)?))
+            &mut Lazy::Guid(id) => {
+                *self = Lazy::Object(Box::new(Connection::by_id::<T>(conn, id).map_err(|_| LoadError::NotFound)?));
+                if let &mut Lazy::Object(ref o) = self {
+                    Ok(o)
+                } else { unreachable!() }
             }
-            Lazy::Object(o) => Ok(o),
+            &mut Lazy::Object(ref o) => Ok(o),
         }
     }
 }

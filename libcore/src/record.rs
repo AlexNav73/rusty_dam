@@ -34,9 +34,9 @@ impl Record {
         Record {
             id: Uuid::new_v4(),
             name: None,
-            fields: FieldCollection::new(),
-            classifications: ClassificationCollection::new(),
-            files: FileCollection::new(),
+            fields: FieldCollection::new(conn.clone()),
+            classifications: ClassificationCollection::new(conn.clone()),
+            files: FileCollection::new(conn.clone()),
             created_on: UTC::now(),
             modified_on: UTC::now(),
             // TODO: Proper impl
@@ -74,11 +74,6 @@ pub struct RecordDto {
     system: SystemInfo,
 }
 
-// impl From<Record> for RecordDto {
-// fn from(record: Record) -> RecordDto {
-// }
-// }
-
 impl Document<Record> for RecordDto {
     fn doc_type() -> &'static str {
         "record"
@@ -88,9 +83,9 @@ impl Document<Record> for RecordDto {
         Record {
             id: self.system.id,
             name: Some(self.name),
-            fields: self.fields.iter().collect(),
-            classifications: self.classifications.iter().collect(),
-            files: self.files.iter().collect(),
+            fields: FieldCollection::from_iter(self.fields.iter(), conn.clone()),
+            classifications: ClassificationCollection::from_iter(self.classifications.iter(), conn.clone()),
+            files: FileCollection::from_iter(self.files.iter(), conn.clone()),
             created_by: self.system.created_by.to_string(),
             created_on: DateTime::from_utc(self.system.created_on, UTC),
             modified_by: self.system.modified_by.to_string(),
@@ -124,3 +119,4 @@ impl Entity for Record {
         }
     }
 }
+
