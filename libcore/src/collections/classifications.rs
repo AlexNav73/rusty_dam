@@ -19,7 +19,7 @@ impl ClassificationCollection {
     pub fn new(conn: Rc<RefCell<Connection>>) -> ClassificationCollection {
         ClassificationCollection {
             classifications: HashMap::new(),
-            connection: conn
+            connection: conn,
         }
     }
 
@@ -28,7 +28,7 @@ impl ClassificationCollection {
     {
         ClassificationCollection {
             classifications: iter.into_iter().map(|&id| (id, Lazy::Guid(id))).collect(),
-            connection: conn
+            connection: conn,
         }
     }
 }
@@ -42,4 +42,3 @@ impl EntityCollection<Classification> for ClassificationCollection {
         IterMut::new(self.connection.clone(), self.classifications.values_mut())
     }
 }
-

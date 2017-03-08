@@ -9,12 +9,12 @@ use connection::Connection;
 
 pub struct Classification {
     id: Uuid,
-    connection: Rc<RefCell<Connection>>
+    connection: Rc<RefCell<Connection>>,
 }
 
 #[derive(Serialize, Deserialize)]
 pub struct ClassificationDto {
-    id: Uuid
+    id: Uuid,
 }
 
 impl Document<Classification> for ClassificationDto {
@@ -25,7 +25,7 @@ impl Document<Classification> for ClassificationDto {
     fn map(self, conn: Rc<RefCell<Connection>>) -> Classification {
         Classification {
             id: self.id,
-            connection: conn
+            connection: conn,
         }
     }
 }
@@ -38,9 +38,6 @@ impl Entity for Classification {
     }
 
     fn map(&self) -> ClassificationDto {
-        ClassificationDto {
-            id: self.id
-        }
+        ClassificationDto { id: self.id }
     }
 }
-

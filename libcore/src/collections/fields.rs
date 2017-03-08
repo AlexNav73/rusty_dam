@@ -19,16 +19,16 @@ impl FieldCollection {
     pub fn new(conn: Rc<RefCell<Connection>>) -> FieldCollection {
         FieldCollection {
             fields: HashMap::new(),
-            connection: conn
+            connection: conn,
         }
     }
 
     pub fn from_iter<'a, T>(iter: T, conn: Rc<RefCell<Connection>>) -> Self
         where T: IntoIterator<Item = &'a Uuid>
     {
-        FieldCollection { 
+        FieldCollection {
             fields: iter.into_iter().map(|&id| (id, Lazy::Guid(id))).collect(),
-            connection: conn
+            connection: conn,
         }
     }
 }
@@ -42,4 +42,3 @@ impl EntityCollection<Field> for FieldCollection {
         IterMut::new(self.connection.clone(), self.fields.values_mut())
     }
 }
-

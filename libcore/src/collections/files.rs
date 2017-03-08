@@ -17,12 +17,11 @@ pub struct FileCollection {
 }
 
 impl FileCollection {
-    pub fn new(conn: Rc<RefCell<Connection>>) -> FileCollection
-    {
+    pub fn new(conn: Rc<RefCell<Connection>>) -> FileCollection {
         FileCollection {
             latest: None,
             files: HashMap::new(),
-            connection: conn
+            connection: conn,
         }
     }
 
@@ -32,7 +31,7 @@ impl FileCollection {
         FileCollection {
             latest: None,
             files: iter.into_iter().map(|&id| (id, Lazy::Guid(id))).collect(),
-            connection: conn
+            connection: conn,
         }
     }
 
@@ -52,4 +51,3 @@ impl EntityCollection<File> for FileCollection {
         IterMut::new(self.connection.clone(), self.files.values_mut())
     }
 }
-

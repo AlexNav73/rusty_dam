@@ -84,7 +84,8 @@ impl Document<Record> for RecordDto {
             id: self.system.id,
             name: Some(self.name),
             fields: FieldCollection::from_iter(self.fields.iter(), conn.clone()),
-            classifications: ClassificationCollection::from_iter(self.classifications.iter(), conn.clone()),
+            classifications: ClassificationCollection::from_iter(self.classifications.iter(),
+                                                                 conn.clone()),
             files: FileCollection::from_iter(self.files.iter(), conn.clone()),
             created_by: self.system.created_by.to_string(),
             created_on: DateTime::from_utc(self.system.created_on, UTC),
@@ -115,8 +116,7 @@ impl Entity for Record {
                 created_on: self.created_on.naive_utc(),
                 modified_by: self.modified_by.to_string(),
                 modified_on: self.modified_on.naive_utc(),
-            }
+            },
         }
     }
 }
-

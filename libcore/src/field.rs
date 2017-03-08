@@ -9,12 +9,12 @@ use connection::Connection;
 
 pub struct Field {
     id: Uuid,
-    connection: Rc<RefCell<Connection>>
+    connection: Rc<RefCell<Connection>>,
 }
 
 #[derive(Serialize, Deserialize)]
 pub struct FieldDto {
-    id: Uuid
+    id: Uuid,
 }
 
 impl Document<Field> for FieldDto {
@@ -25,7 +25,7 @@ impl Document<Field> for FieldDto {
     fn map(self, conn: Rc<RefCell<Connection>>) -> Field {
         Field {
             id: self.id,
-            connection: conn
+            connection: conn,
         }
     }
 }
@@ -38,9 +38,6 @@ impl Entity for Field {
     }
 
     fn map(&self) -> FieldDto {
-        FieldDto {
-            id: self.id
-        }
+        FieldDto { id: self.id }
     }
 }
-

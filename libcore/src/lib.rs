@@ -68,10 +68,14 @@ impl<T: Entity> Lazy<T> {
     pub fn unwrap(&mut self, conn: Rc<RefCell<Connection>>) -> Result<&T, LoadError> {
         match self {
             &mut Lazy::Guid(id) => {
-                *self = Lazy::Object(Box::new(Connection::by_id::<T>(conn, id).map_err(|_| LoadError::NotFound)?));
+                *self = Lazy::Object(Box::new(Connection::by_id::<T>(conn, id)
+                    .map_err(|_| LoadError::NotFound)?));
+
                 if let &mut Lazy::Object(ref o) = self {
                     Ok(o)
-                } else { unreachable!() }
+                } else {
+                    unreachable!()
+                }
             }
             &mut Lazy::Object(ref o) => Ok(o),
         }
@@ -89,4 +93,3 @@ impl fmt::Debug for LoadError {
         }
     }
 }
-
