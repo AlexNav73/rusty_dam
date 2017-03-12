@@ -47,15 +47,19 @@ impl Connection {
 pub struct App(Rc<RefCell<Connection>>);
 
 impl App {
-    fn new() -> App {
+    pub fn new() -> App {
         App(Rc::new(RefCell::new(Connection::new())))
     }
 
-    fn get<T: Entity>(&self, id: Uuid) -> Result<T, EsError> {
+    pub fn connection(&self) -> Rc<RefCell<Connection>> {
+        self.0.clone()
+    }
+
+    pub fn get<T: Entity>(&self, id: Uuid) -> Result<T, EsError> {
         Connection::by_id(self.0.clone(), id)
     }
 
-    fn save<T: Entity>(&self, item: &T) {
+    pub fn save<T: Entity>(&self, item: &T) {
         Connection::save(self.0.clone(), item)
     }
 }

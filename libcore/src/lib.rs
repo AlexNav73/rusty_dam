@@ -25,7 +25,7 @@ use std::fmt;
 use std::rc::Rc;
 
 pub use uuid::Uuid;
-pub use connection::Connection;
+pub use connection::{App, Connection};
 pub use record::Record;
 
 pub trait Entity

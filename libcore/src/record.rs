@@ -17,7 +17,6 @@ use collections::classifications::ClassificationCollection;
 
 pub struct Record {
     id: Uuid,
-    name: Option<String>,
     fields: FieldCollection,
     classifications: ClassificationCollection,
     files: FileCollection,
@@ -33,7 +32,6 @@ impl Record {
     fn create(conn: Rc<RefCell<Connection>>) -> Record {
         Record {
             id: Uuid::new_v4(),
-            name: None,
             fields: FieldCollection::new(conn.clone()),
             classifications: ClassificationCollection::new(conn.clone()),
             files: FileCollection::new(conn.clone()),
@@ -46,28 +44,10 @@ impl Record {
             connection: conn,
         }
     }
-
-    pub fn name(&self) -> &str {
-        match self.name {
-            Some(ref n) => n,
-            None => {
-                // let file_ref: File = self.files
-                // .latest()
-                // .expect("File collection is empty");
-
-                // let file: &File = file_ref.into_inner().expect("Cant load lates file");
-                // file.file_stem()
-
-                // TODO: Proper impl
-                ""
-            }
-        }
-    }
 }
 
 #[derive(Serialize, Deserialize)]
 pub struct RecordDto {
-    name: String,
     fields: Vec<Uuid>,
     classifications: Vec<Uuid>,
     files: Vec<Uuid>,
@@ -82,7 +62,6 @@ impl Document<Record> for RecordDto {
     fn map(self, conn: Rc<RefCell<Connection>>) -> Record {
         Record {
             id: self.system.id,
-            name: Some(self.name),
             fields: FieldCollection::from_iter(self.fields.iter(), conn.clone()),
             classifications: ClassificationCollection::from_iter(self.classifications.iter(),
                                                                  conn.clone()),
@@ -106,7 +85,6 @@ impl Entity for Record {
 
     fn map(&self) -> RecordDto {
         RecordDto {
-            name: self.name().to_string(),
             fields: self.fields.ids().collect(),
             classifications: self.classifications.ids().collect(),
             files: self.files.ids().collect(),

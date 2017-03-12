@@ -5,14 +5,13 @@ use uuid::Uuid;
 use std::rc::Rc;
 use std::cell::RefCell;
 
+use rs_es::error;
 use rs_es::Client;
 use rs_es::query::*;
-use rs_es::operations::get::{GetOperation, GetResult};
-use rs_es::operations::index::IndexOperation;
-use rs_es::operations::search::{SearchQueryOperation, SearchHitsResult, SearchHitsHitsResult,
-                                SearchResult};
+use rs_es::operations::get::GetResult;
+use rs_es::operations::index::IndexResult;
+use rs_es::operations::search::{SearchHitsResult, SearchHitsHitsResult, SearchResult};
 
-use std::mem;
 use std::fmt;
 
 use {Entity, Document};
@@ -34,34 +33,32 @@ impl EsClient {
 
     pub fn index<'a, 'b, T: Entity>(&'a mut self,
                                     doc: &'b T)
-                                    -> &'a mut IndexOperation<'a, 'b, T::Dto> {
-        // FIXME: Remove mem::transmute when rs-es fix operations lifetime rules
-        unsafe {
-            mem::transmute(self.client
-                .index(ES_INDEX_NAME, T::Dto::doc_type())
-                .with_doc(&doc.map())
-                .with_id(doc.id().hyphenated().to_string().as_str()))
-        }
+                                    -> Result<IndexResult, error::EsError> {
+        self.client
+            .index(ES_INDEX_NAME, T::Dto::doc_type())
+            .with_doc(&doc.map())
+            .with_id(doc.id().hyphenated().to_string().as_str())
+            .send()
     }
 
-    pub fn get<'a, 'b, T: Entity>(&'a mut self, id: Uuid) -> &'a mut GetOperation<'a, 'b> {
-        unsafe {
-            mem::transmute(self.client
-                .get(ES_INDEX_NAME, id.hyphenated().to_string().as_str())
-                .with_doc_type(T::Dto::doc_type()))
-        }
+    pub fn get<'a, 'b, T: Entity>(&'a mut self,
+                                  id: Uuid)
+                                  -> Result<GetResult<T::Dto>, error::EsError> {
+        self.client
+            .get(ES_INDEX_NAME, id.hyphenated().to_string().as_str())
+            .with_doc_type(T::Dto::doc_type())
+            .send()
     }
 
     pub fn search<'a, 'b, T: Entity>(&'a mut self,
                                      q: &'b Query)
-                                     -> &'a mut SearchQueryOperation<'a, 'b> {
-        unsafe {
-            mem::transmute(self.client
-                .search_query()
-                .with_indexes(&[ES_INDEX_NAME])
-                .with_types(&[T::Dto::doc_type()])
-                .with_query(q))
-        }
+                                     -> Result<SearchResult<T::Dto>, error::EsError> {
+        self.client
+            .search_query()
+            .with_indexes(&[ES_INDEX_NAME])
+            .with_types(&[T::Dto::doc_type()])
+            .with_query(q)
+            .send()
     }
 }
 
@@ -100,7 +97,7 @@ impl EsRepository {
                           conn: Rc<RefCell<Connection>>,
                           id: Uuid)
                           -> Result<T, EsError> {
-        match self.client.get::<T>(id).send() {
+        match self.client.get::<T>(id) {
             Ok(GetResult { source: Some(doc), .. }) => {
                 let doc: T::Dto = doc;
                 Ok(doc.map(conn))
@@ -113,7 +110,7 @@ impl EsRepository {
                              conn: Rc<RefCell<Connection>>,
                              query: Query)
                              -> Result<Vec<Box<T>>, EsError> {
-        match self.client.search::<T>(&query).send() {
+        match self.client.search::<T>(&query) {
             Ok(SearchResult { hits: SearchHitsResult { hits: mut result, .. }, .. }) => {
                 let docs = result.drain(..)
                     .map(|h: SearchHitsHitsResult<T::Dto>| h.source.and_then(|x| Some(x)))
@@ -127,6 +124,6 @@ impl EsRepository {
     }
 
     pub fn index<T: Entity>(&mut self, item: &T) {
-        let _ = self.client.index(item).send();
+        let _ = self.client.index(item);
     }
 }

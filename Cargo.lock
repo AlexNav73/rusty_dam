@@ -11,6 +11,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "app"
+version = "0.1.0"
+dependencies = [
+ "libcore 0.1.0",
+]
+
+[[package]]
 name = "chrono"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -18,13 +25,6 @@ dependencies = [
  "num 0.1.36 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 0.9.7 (registry+https://github.com/rust-lang/crates.io-index)",
  "time 0.1.36 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
-name = "cons"
-version = "0.1.0"
-dependencies = [
- "libcore 0.1.0",
 ]
 
 [[package]]

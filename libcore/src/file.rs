@@ -6,7 +6,7 @@ use std::path::Path;
 use std::rc::Rc;
 
 use {Entity, Document};
-use connection::Connection;
+use connection::{App, Connection};
 
 pub enum FileError {
     NotAFile,
@@ -20,20 +20,20 @@ pub struct File {
 }
 
 impl File {
-    pub fn new<P: AsRef<Path>>(_path: P) -> Result<File, FileError> {
-        unimplemented!()
-/*        let path = path.as_ref();*/
+    pub fn new<P: AsRef<Path>>(app: App, path: P) -> Result<File, FileError> {
+        let path = path.as_ref();
 
-        //match (path.exists(), path.is_file()) {
-            //(true, true) => {
-                //Ok(File {
-                    //id: Uuid::new_v4(),
-                    //path: Some(path.to_str().ok_or(FileError::PathDoesNotExists)?.to_string()),
-                //})
-            //}
-            //(false, _) => Err(FileError::PathDoesNotExists),
-            //(true, false) => Err(FileError::NotAFile),
-        /*}*/
+        match (path.exists(), path.is_file()) {
+            (true, true) => {
+                Ok(File {
+                    id: Uuid::new_v4(),
+                    path: Some(path.to_str().ok_or(FileError::PathDoesNotExists)?.to_string()),
+                    connection: app.connection()
+                })
+            }
+            (false, _) => Err(FileError::PathDoesNotExists),
+            (true, false) => Err(FileError::NotAFile),
+        }
     }
 
     pub fn file_stem(&self) -> &str {
