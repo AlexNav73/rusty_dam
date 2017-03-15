@@ -12,30 +12,28 @@ use rs_es::operations::get::GetResult;
 use rs_es::operations::index::IndexResult;
 use rs_es::operations::search::{SearchHitsResult, SearchHitsHitsResult, SearchResult};
 
-use std::fmt;
-
 use {Entity, Document};
 use connection::Connection;
 
-// TODO: Index must be named be connection name to allow
-//       multiple indices in one cluster. Sould be taken from config
-const ES_INDEX_NAME: &'static str = "rusty_dam";
-
 pub struct EsClient {
+    index: String,
     client: Client,
 }
 
 impl EsClient {
     #[inline]
-    pub fn new<S: AsRef<str>>(url: S) -> Result<EsClient, EsError> {
-        Ok(EsClient { client: Client::new(url.as_ref()).map_err(|_| EsError::InvalidUrl)? })
+    pub fn new(url: String, index: String) -> Result<EsClient, EsError> {
+        Ok(EsClient {
+            index: index,
+            client: Client::new(&url).map_err(|_| EsError::InvalidUrl)?
+        })
     }
 
     pub fn index<'a, 'b, T: Entity>(&'a mut self,
                                     doc: &'b T)
                                     -> Result<IndexResult, error::EsError> {
         self.client
-            .index(ES_INDEX_NAME, T::Dto::doc_type())
+            .index(&self.index, T::Dto::doc_type())
             .with_doc(&doc.map())
             .with_id(doc.id().hyphenated().to_string().as_str())
             .send()
@@ -45,7 +43,7 @@ impl EsClient {
                                   id: Uuid)
                                   -> Result<GetResult<T::Dto>, error::EsError> {
         self.client
-            .get(ES_INDEX_NAME, id.hyphenated().to_string().as_str())
+            .get(&self.index, id.hyphenated().to_string().as_str())
             .with_doc_type(T::Dto::doc_type())
             .send()
     }
@@ -55,22 +53,19 @@ impl EsClient {
                                      -> Result<SearchResult<T::Dto>, error::EsError> {
         self.client
             .search_query()
-            .with_indexes(&[ES_INDEX_NAME])
+            .with_indexes(&[&self.index])
             .with_types(&[T::Dto::doc_type()])
             .with_query(q)
             .send()
     }
 }
 
+#[derive(Debug)]
 pub enum EsError {
     InvalidUrl,
     NotFound,
-}
-
-impl fmt::Debug for EsError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Unable to connect to elasticsearch using this adress")
-    }
+    CreationFailed,
+    Inner(error::EsError)
 }
 
 #[derive(Serialize, Deserialize)]
@@ -87,9 +82,9 @@ pub struct EsRepository {
 }
 
 impl EsRepository {
-    pub fn new<S: AsRef<str>>(url: S) -> EsRepository {
+    pub fn new(url: String, index: String) -> EsRepository {
         EsRepository {
-            client: EsClient::new(url.as_ref()).expect("Unable to connect to elasticsearch"),
+            client: EsClient::new(url, index).expect("Unable to connect to elasticsearch"),
         }
     }
 
@@ -123,7 +118,13 @@ impl EsRepository {
         }
     }
 
-    pub fn index<T: Entity>(&mut self, item: &T) {
-        let _ = self.client.index(item);
+    pub fn index<T: Entity>(&mut self, item: &T) -> Result<(), EsError> {
+        match self.client.index(item) {
+            Ok(IndexResult { created, .. }) if created => Ok(()),
+            Ok(IndexResult { created, .. }) if !created => Err(EsError::CreationFailed),
+            Err(inner) => Err(EsError::Inner(inner)),
+            Ok(_) => unreachable!()
+        }
     }
 }
+

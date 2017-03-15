@@ -5,6 +5,8 @@ use std::rc::Rc;
 use std::cell::RefCell;
 
 use es::{EsRepository, EsError};
+use user::User;
+use configuration::Configuration;
 
 use Entity;
 
@@ -14,17 +16,12 @@ pub struct Connection {
 }
 
 impl Connection {
-    pub fn new() -> Connection {
+    pub fn new<C: Configuration>(config: C) -> Connection {
         Connection {
-            is_logged_in: false,
-            // TODO: Url should be stored in registration
-            es_client: EsRepository::new("http://localhost:9200"),
+            // TODO: Proper impl
+            is_logged_in: true,
+            es_client: EsRepository::new(config.es_url(), config.es_index_name()),
         }
-    }
-
-    pub fn login(&mut self) {
-        // TODO: Proper impl
-        self.is_logged_in = true;
     }
 
     pub fn authorized(&self) -> bool {
@@ -36,30 +33,46 @@ impl Connection {
         this.es_client.get::<T>(conn.clone(), id).map_err(|_| EsError::NotFound)
     }
 
-    pub fn save<T: Entity>(conn: Rc<RefCell<Connection>>, item: &T) {
+    pub fn save<T: Entity>(conn: Rc<RefCell<Connection>>, item: &T) -> Result<(), EsError> {
         if !conn.borrow().authorized() {
             panic!("Connection not establish. You mast Login first");
         }
-        conn.borrow_mut().es_client.index(item);
+        conn.borrow_mut().es_client.index(item)
     }
 }
 
-pub struct App(Rc<RefCell<Connection>>);
+pub struct App {
+    user: User,
+    connection: Rc<RefCell<Connection>>
+}
 
 impl App {
-    pub fn new() -> App {
-        App(Rc::new(RefCell::new(Connection::new())))
+    pub fn new<C: Configuration>(config: C) -> App {
+        let connection = Rc::new(RefCell::new(Connection::new(config)));
+        App {
+            user: User::get(connection.clone()),
+            connection: connection
+        }
     }
 
     pub fn connection(&self) -> Rc<RefCell<Connection>> {
-        self.0.clone()
+        self.connection.clone()
+    }
+
+    pub fn user(&self) -> &User {
+        &self.user
     }
 
     pub fn get<T: Entity>(&self, id: Uuid) -> Result<T, EsError> {
-        Connection::by_id(self.0.clone(), id)
+        Connection::by_id(self.connection(), id)
     }
 
-    pub fn save<T: Entity>(&self, item: &T) {
-        Connection::save(self.0.clone(), item)
+    pub fn create<T: Entity>(&self) -> T {
+        T::create(self)
+    }
+
+    pub fn save<T: Entity>(&self, item: &T) -> Result<(), EsError> {
+        Connection::save(self.connection(), item)
     }
 }
+

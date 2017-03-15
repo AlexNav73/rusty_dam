@@ -17,6 +17,8 @@ mod classification;
 mod es;
 mod connection;
 mod collections;
+mod user;
+mod configuration;
 
 use serde::{Serialize, Deserialize};
 
@@ -27,6 +29,7 @@ use std::rc::Rc;
 pub use uuid::Uuid;
 pub use connection::{App, Connection};
 pub use record::Record;
+pub use configuration::Configuration;
 
 pub trait Entity
     where Self: Sized
@@ -41,6 +44,11 @@ pub trait Entity
     /// Maps to DTO for working with database
     ///
     fn map(&self) -> Self::Dto;
+
+    ///
+    /// Creates instance of Self initialized with connection
+    ///
+    fn create(app: &App) -> Self;
 }
 
 ///
