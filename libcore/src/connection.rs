@@ -5,7 +5,7 @@ use std::rc::Rc;
 use std::cell::RefCell;
 
 use es::{EsRepository, EsError};
-use user::User;
+use models::user::User;
 use configuration::Configuration;
 
 use Entity;

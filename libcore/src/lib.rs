@@ -10,15 +10,10 @@ extern crate uuid;
 extern crate rs_es;
 extern crate chrono;
 
-mod record;
-mod file;
-mod field;
-mod classification;
-mod es;
-mod connection;
-mod collections;
-mod user;
 mod configuration;
+mod connection;
+mod es;
+mod models;
 
 use serde::{Serialize, Deserialize};
 
@@ -28,7 +23,7 @@ use std::rc::Rc;
 
 pub use uuid::Uuid;
 pub use connection::{App, Connection};
-pub use record::Record;
+pub use models::record::Record;
 pub use configuration::Configuration;
 
 pub trait Entity

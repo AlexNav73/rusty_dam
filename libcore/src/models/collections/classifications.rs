@@ -6,8 +6,8 @@ use std::collections::HashMap;
 use std::rc::Rc;
 
 use Lazy;
-use classification::Classification;
-use collections::{EntityCollection, Ids, IterMut};
+use models::classification::Classification;
+use models::collections::{EntityCollection, Ids, IterMut};
 use connection::Connection;
 
 pub struct ClassificationCollection {

@@ -6,9 +6,9 @@ use std::collections::HashMap;
 use std::rc::Rc;
 
 use Lazy;
-use collections::{EntityCollection, Ids, IterMut};
+use models::collections::{EntityCollection, Ids, IterMut};
+use models::file::File;
 use connection::Connection;
-use file::File;
 
 pub struct FileCollection {
     latest: Option<Uuid>,

@@ -6,14 +6,14 @@ use std::rc::Rc;
 use std::cell::RefCell;
 
 use {Entity, Document};
-use file::File;
+use models::file::File;
 use es::SystemInfo;
 use connection::{ App, Connection };
 
-use collections::EntityCollection;
-use collections::fields::FieldCollection;
-use collections::files::FileCollection;
-use collections::classifications::ClassificationCollection;
+use models::collections::EntityCollection;
+use models::collections::fields::FieldCollection;
+use models::collections::files::FileCollection;
+use models::collections::classifications::ClassificationCollection;
 
 pub struct Record {
     id: Uuid,

@@ -6,9 +6,9 @@ use std::collections::HashMap;
 use std::rc::Rc;
 
 use Lazy;
-use collections::{EntityCollection, Ids, IterMut};
+use models::collections::{EntityCollection, Ids, IterMut};
+use models::field::Field;
 use connection::Connection;
-use field::Field;
 
 pub struct FieldCollection {
     fields: HashMap<Uuid, Lazy<Field>>,
