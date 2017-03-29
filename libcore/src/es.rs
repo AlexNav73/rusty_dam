@@ -24,9 +24,9 @@ impl EsClient {
     #[inline]
     pub fn new(url: String, index: String) -> Result<EsClient, EsError> {
         Ok(EsClient {
-            index: index,
-            client: Client::new(&url).map_err(|_| EsError::InvalidUrl)?
-        })
+               index: index,
+               client: Client::new(&url).map_err(|_| EsError::InvalidUrl)?,
+           })
     }
 
     pub fn index<'a, 'b, T: Entity>(&'a mut self,
@@ -65,7 +65,7 @@ pub enum EsError {
     InvalidUrl,
     NotFound,
     CreationFailed,
-    Inner(error::EsError)
+    Inner(error::EsError),
 }
 
 #[derive(Serialize, Deserialize)]
@@ -107,7 +107,8 @@ impl EsRepository {
                              -> Result<Vec<Box<T>>, EsError> {
         match self.client.search::<T>(&query) {
             Ok(SearchResult { hits: SearchHitsResult { hits: mut result, .. }, .. }) => {
-                let docs = result.drain(..)
+                let docs = result
+                    .drain(..)
                     .map(|h: SearchHitsHitsResult<T::Dto>| h.source.and_then(|x| Some(x)))
                     .filter(|h| h.is_some())
                     .map(|h| Box::new(h.unwrap().map(conn.clone())))
@@ -123,8 +124,7 @@ impl EsRepository {
             Ok(IndexResult { created, .. }) if created => Ok(()),
             Ok(IndexResult { created, .. }) if !created => Err(EsError::CreationFailed),
             Err(inner) => Err(EsError::Inner(inner)),
-            Ok(_) => unreachable!()
+            Ok(_) => unreachable!(),
         }
     }
 }
-

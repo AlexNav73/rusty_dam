@@ -26,8 +26,7 @@ pub use connection::{App, Connection};
 pub use models::record::Record;
 pub use configuration::Configuration;
 
-pub trait Entity: Sized
-{
+pub trait Entity: Sized {
     type Dto: Document<Self>;
     ///
     /// Unique identifier of entity

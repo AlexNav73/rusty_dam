@@ -30,7 +30,9 @@ impl Connection {
 
     pub fn by_id<T: Entity>(conn: Rc<RefCell<Connection>>, id: Uuid) -> Result<T, EsError> {
         let mut this = conn.borrow_mut();
-        this.es_client.get::<T>(conn.clone(), id).map_err(|_| EsError::NotFound)
+        this.es_client
+            .get::<T>(conn.clone(), id)
+            .map_err(|_| EsError::NotFound)
     }
 
     pub fn save<T: Entity>(conn: Rc<RefCell<Connection>>, item: &T) -> Result<(), EsError> {
@@ -43,7 +45,7 @@ impl Connection {
 
 pub struct App {
     user: User,
-    connection: Rc<RefCell<Connection>>
+    connection: Rc<RefCell<Connection>>,
 }
 
 impl App {
@@ -51,7 +53,7 @@ impl App {
         let connection = Rc::new(RefCell::new(Connection::new(config)));
         App {
             user: User::get(connection.clone()),
-            connection: connection
+            connection: connection,
         }
     }
 
@@ -75,4 +77,3 @@ impl App {
         Connection::save(self.connection(), item)
     }
 }
-

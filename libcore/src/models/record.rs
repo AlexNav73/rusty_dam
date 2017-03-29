@@ -8,7 +8,7 @@ use std::cell::RefCell;
 use {Entity, Document};
 use models::file::File;
 use es::SystemInfo;
-use connection::{ App, Connection };
+use connection::{App, Connection};
 
 use models::collections::EntityCollection;
 use models::collections::fields::FieldCollection;
@@ -63,7 +63,7 @@ impl Entity for Record {
             created_by: app.user().login().to_string(),
             modified_by: app.user().login().to_string(),
             is_new: true,
-            connection: conn
+            connection: conn,
         }
     }
 }
@@ -97,4 +97,3 @@ impl Document<Record> for RecordDto {
         }
     }
 }
-

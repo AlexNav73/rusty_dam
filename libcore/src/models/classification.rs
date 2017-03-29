@@ -27,7 +27,7 @@ impl Entity for Classification {
         Classification {
             id: Uuid::new_v4(),
             full_path: None,
-            connection: app.connection()
+            connection: app.connection(),
         }
     }
 
@@ -40,8 +40,8 @@ impl Entity for Classification {
             id: self.id,
             full_path: match self.full_path {
                 None => panic!("Classification mast have path"),
-                Some(ref s) => s.to_string()
-            }
+                Some(ref s) => s.to_string(),
+            },
         }
     }
 }
@@ -49,7 +49,7 @@ impl Entity for Classification {
 #[derive(Serialize, Deserialize)]
 pub struct ClassificationDto {
     id: Uuid,
-    full_path: String
+    full_path: String,
 }
 
 impl Document<Classification> for ClassificationDto {
@@ -65,4 +65,3 @@ impl Document<Classification> for ClassificationDto {
         }
     }
 }
-

@@ -26,7 +26,7 @@ impl Entity for Field {
     fn create(app: &App) -> Field {
         Field {
             id: Uuid::new_v4(),
-            connection: app.connection()
+            connection: app.connection(),
         }
     }
 }
@@ -48,4 +48,3 @@ impl Document<Field> for FieldDto {
         }
     }
 }
-

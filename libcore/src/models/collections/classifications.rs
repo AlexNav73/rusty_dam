@@ -27,7 +27,9 @@ impl ClassificationCollection {
         where T: IntoIterator<Item = &'a Uuid>
     {
         ClassificationCollection {
-            classifications: iter.into_iter().map(|&id| (id, Lazy::Guid(id))).collect(),
+            classifications: iter.into_iter()
+                .map(|&id| (id, Lazy::Guid(id)))
+                .collect(),
             connection: conn,
         }
     }

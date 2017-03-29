@@ -10,7 +10,7 @@ pub struct User {
     id: Uuid,
     login: String,
     password: String,
-    connection: Rc<RefCell<Connection>>
+    connection: Rc<RefCell<Connection>>,
 }
 
 impl User {
@@ -19,7 +19,7 @@ impl User {
             id: Uuid::new_v4(),
             login: login,
             password: password,
-            connection: conn
+            connection: conn,
         }
     }
 
@@ -29,7 +29,7 @@ impl User {
             id: Uuid::new_v4(),
             login: "".to_string(),
             password: "".to_string(),
-            connection: conn
+            connection: conn,
         }
     }
 
@@ -41,4 +41,3 @@ impl User {
         unimplemented!()
     }
 }
-

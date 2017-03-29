@@ -46,10 +46,9 @@ impl Entity for File {
         File {
             id: Uuid::new_v4(),
             path: None,
-            connection: app.connection()
+            connection: app.connection(),
         }
     }
-
 }
 
 #[derive(Serialize, Deserialize)]
@@ -70,4 +69,3 @@ impl Document<File> for FileDto {
         }
     }
 }
-

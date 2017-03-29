@@ -59,6 +59,8 @@ impl<'a, T: Entity + 'a> Iterator for IterMut<'a, T> {
     type Item = Result<&'a T, LoadError>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.inner.next().map(|x| x.unwrap(self.connection.clone()))
+        self.inner
+            .next()
+            .map(|x| x.unwrap(self.connection.clone()))
     }
 }

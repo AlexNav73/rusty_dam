@@ -30,7 +30,9 @@ impl FileCollection {
     {
         FileCollection {
             latest: None,
-            files: iter.into_iter().map(|&id| (id, Lazy::Guid(id))).collect(),
+            files: iter.into_iter()
+                .map(|&id| (id, Lazy::Guid(id)))
+                .collect(),
             connection: conn,
         }
     }
