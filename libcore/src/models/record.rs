@@ -5,9 +5,9 @@ use chrono::{DateTime, UTC};
 use std::rc::Rc;
 use std::cell::RefCell;
 
-use {Entity, Document};
-use models::file::File;
-use es::SystemInfo;
+use {Entity, ToDto, FromDto};
+//use models::file::File;
+use es::{SystemInfo, EsDto};
 use connection::{App, Connection};
 
 use models::collections::EntityCollection;
@@ -29,25 +29,8 @@ pub struct Record {
 }
 
 impl Entity for Record {
-    type Dto = RecordDto;
-
     fn id(&self) -> Uuid {
         self.id
-    }
-
-    fn map(&self) -> RecordDto {
-        RecordDto {
-            fields: self.fields.ids().collect(),
-            classifications: self.classifications.ids().collect(),
-            files: self.files.ids().collect(),
-            system: SystemInfo {
-                id: self.id,
-                created_by: self.created_by.to_string(),
-                created_on: self.created_on.naive_utc(),
-                modified_by: self.modified_by.to_string(),
-                modified_on: self.modified_on.naive_utc(),
-            },
-        }
     }
 
     fn create(app: &App) -> Record {
@@ -68,6 +51,25 @@ impl Entity for Record {
     }
 }
 
+impl ToDto for Record {
+    type Dto = RecordDto;
+
+    fn to_dto(&self) -> RecordDto {
+        RecordDto {
+            fields: self.fields.ids().collect(),
+            classifications: self.classifications.ids().collect(),
+            files: self.files.ids().collect(),
+            system: SystemInfo {
+                id: self.id,
+                created_by: self.created_by.to_string(),
+                created_on: self.created_on.naive_utc(),
+                modified_by: self.modified_by.to_string(),
+                modified_on: self.modified_on.naive_utc(),
+            },
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize)]
 pub struct RecordDto {
     fields: Vec<Uuid>,
@@ -76,12 +78,20 @@ pub struct RecordDto {
     system: SystemInfo,
 }
 
-impl Document<Record> for RecordDto {
+impl EsDto for RecordDto {
     fn doc_type() -> &'static str {
         "records"
     }
 
-    fn map(self, conn: Rc<RefCell<Connection>>) -> Record {
+    fn id(&self) -> Uuid {
+        self.system.id
+    }
+}
+
+impl FromDto for RecordDto {
+    type Item = Record;
+
+    fn from_dto(self, conn: Rc<RefCell<Connection>>) -> Record {
         Record {
             id: self.system.id,
             fields: FieldCollection::from_iter(self.fields.iter(), conn.clone()),
@@ -97,3 +107,4 @@ impl Document<Record> for RecordDto {
         }
     }
 }
+

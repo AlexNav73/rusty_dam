@@ -1,4 +1,5 @@
 
+use serde::{Serialize, Deserialize};
 use chrono::naive::datetime::NaiveDateTime;
 use uuid::Uuid;
 
@@ -10,51 +11,56 @@ use rs_es::Client;
 use rs_es::query::*;
 use rs_es::operations::get::GetResult;
 use rs_es::operations::index::IndexResult;
-use rs_es::operations::search::{SearchHitsResult, SearchHitsHitsResult, SearchResult};
+use rs_es::operations::search::{SearchHitsResult, SearchResult};
 
-use {Entity, Document};
+use { FromDto };
 use connection::Connection;
 
-pub struct EsClient {
+pub trait EsDto: FromDto + Serialize + Deserialize {
+    fn doc_type() -> &'static str;
+    fn id(&self) -> Uuid;
+}
+
+struct EsClient {
     index: String,
     client: Client,
 }
 
 impl EsClient {
     #[inline]
-    pub fn new(url: String, index: String) -> Result<EsClient, EsError> {
+    fn new(url: String, index: String) -> Result<EsClient, EsError> {
         Ok(EsClient {
                index: index,
                client: Client::new(&url).map_err(|_| EsError::InvalidUrl)?,
            })
     }
 
-    pub fn index<'a, 'b, T: Entity>(&'a mut self,
+    fn index<'a, 'b, T: EsDto>(&'a mut self,
                                     doc: &'b T)
                                     -> Result<IndexResult, error::EsError> {
         self.client
-            .index(&self.index, T::Dto::doc_type())
-            .with_doc(&doc.map())
+            .index(&self.index, T::doc_type())
+            .with_doc(doc)
             .with_id(doc.id().hyphenated().to_string().as_str())
             .send()
     }
 
-    pub fn get<'a, 'b, T: Entity>(&'a mut self,
+    fn get<'a, 'b, T: EsDto>(&'a mut self,
                                   id: Uuid)
-                                  -> Result<GetResult<T::Dto>, error::EsError> {
+                                  -> Result<GetResult<T>, error::EsError> {
         self.client
             .get(&self.index, id.hyphenated().to_string().as_str())
-            .with_doc_type(T::Dto::doc_type())
+            .with_doc_type(T::doc_type())
             .send()
     }
 
-    pub fn search<'a, 'b, T: Entity>(&'a mut self,
+    fn search<'a, 'b, T: EsDto>(&'a mut self,
                                      q: &'b Query)
-                                     -> Result<SearchResult<T::Dto>, error::EsError> {
+                                     -> Result<SearchResult<T>, error::EsError> {
         self.client
             .search_query()
             .with_indexes(&[&self.index])
-            .with_types(&[T::Dto::doc_type()])
+            .with_types(&[T::doc_type()])
             .with_query(q)
             .send()
     }
@@ -77,41 +83,32 @@ pub struct SystemInfo {
     pub modified_on: NaiveDateTime,
 }
 
-pub struct EsRepository {
+struct EsRepository {
     client: EsClient,
 }
 
 impl EsRepository {
-    pub fn new(url: String, index: String) -> EsRepository {
+    fn new(url: String, index: String) -> EsRepository {
         EsRepository {
             client: EsClient::new(url, index).expect("Unable to connect to elasticsearch"),
         }
     }
 
-    pub fn get<T: Entity>(&mut self,
-                          conn: Rc<RefCell<Connection>>,
-                          id: Uuid)
-                          -> Result<T, EsError> {
+    fn get<T: EsDto>(&mut self, id: Uuid) -> Result<T, EsError> {
         match self.client.get::<T>(id) {
-            Ok(GetResult { source: Some(doc), .. }) => {
-                let doc: T::Dto = doc;
-                Ok(doc.map(conn))
-            }
+            Ok(GetResult { source: Some(doc), .. }) => Ok(doc),
             _ => Err(EsError::NotFound),
         }
     }
 
-    pub fn search<T: Entity>(&mut self,
-                             conn: Rc<RefCell<Connection>>,
-                             query: Query)
-                             -> Result<Vec<Box<T>>, EsError> {
+    fn search<T: EsDto>(&mut self, query: Query) -> Result<Vec<Box<T>>, EsError> {
         match self.client.search::<T>(&query) {
             Ok(SearchResult { hits: SearchHitsResult { hits: mut result, .. }, .. }) => {
                 let docs = result
                     .drain(..)
-                    .map(|h: SearchHitsHitsResult<T::Dto>| h.source.and_then(|x| Some(x)))
+                    .map(|h| h.source.and_then(|x| Some(x)))
                     .filter(|h| h.is_some())
-                    .map(|h| Box::new(h.unwrap().map(conn.clone())))
+                    .map(|h| h.unwrap())
                     .collect::<Vec<Box<T>>>();
                 Ok(docs)
             }
@@ -119,7 +116,7 @@ impl EsRepository {
         }
     }
 
-    pub fn index<T: Entity>(&mut self, item: &T) -> Result<(), EsError> {
+    fn index<T: EsDto>(&mut self, item: &T) -> Result<(), EsError> {
         match self.client.index(item) {
             Ok(IndexResult { created, .. }) if created => Ok(()),
             Ok(IndexResult { created, .. }) if !created => Err(EsError::CreationFailed),
@@ -128,3 +125,24 @@ impl EsRepository {
         }
     }
 }
+
+pub struct EsService {
+    client: EsRepository,
+}
+
+impl EsService {
+    pub fn new(url: String, index: String) -> EsService {
+        EsService { client: EsRepository::new(url, index) }
+    }
+
+    pub fn by_id<T: FromDto + EsDto>(&mut self, conn: Rc<RefCell<Connection>>, id: Uuid) -> Result<T::Item, EsError> {
+        self.client.get::<T>(id)
+            .map_err(|_| EsError::NotFound)
+            .and_then(|d| Ok(d.from_dto(conn)))
+    }
+
+    pub fn index<T: EsDto>(&mut self, item: &T) -> Result<(), EsError> {
+        self.client.index(item)
+    }
+}
+

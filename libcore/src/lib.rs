@@ -1,5 +1,4 @@
 #![allow(dead_code)]
-#![allow(mutable_transmutes)]
 
 #[macro_use]
 extern crate serde_derive;
@@ -26,17 +25,11 @@ pub use connection::{App, Connection};
 pub use models::record::Record;
 pub use configuration::Configuration;
 
-pub trait Entity: Sized {
-    type Dto: Document<Self>;
+pub trait Entity {
     ///
     /// Unique identifier of entity
     ///
     fn id(&self) -> Uuid;
-
-    ///
-    /// Maps to DTO for working with database
-    ///
-    fn map(&self) -> Self::Dto;
 
     ///
     /// Creates instance of Self initialized with connection
@@ -44,33 +37,32 @@ pub trait Entity: Sized {
     fn create(app: &App) -> Self;
 }
 
-///
-/// All documents which needs to be stored in elasticsearch must
-/// implement this trait.
-///
-pub trait Document<T: Entity>: Serialize + Deserialize {
-    ///
-    /// Document type used by elasticsearch to distinguish documents
-    ///
-    fn doc_type() -> &'static str;
+pub trait ToDto {
+    type Dto: FromDto;
 
-    ///
-    /// Maps DTO to parent type
-    ///
-    fn map(self, conn: Rc<RefCell<Connection>>) -> T;
+    fn to_dto(&self) -> Self::Dto;
 }
 
-pub enum Lazy<T: Entity> {
+pub trait FromDto: Serialize + Deserialize {
+    type Item;
+
+    fn from_dto(self, conn: Rc<RefCell<Connection>>) -> Self::Item;
+}
+
+pub trait Load: Sized + ToDto {
+    fn load(c: Rc<RefCell<Connection>>, id: Uuid) -> Result<Self, LoadError>;
+}
+
+pub enum Lazy<T: Load> {
     Guid(Uuid),
     Object(Box<T>),
 }
 
-impl<T: Entity> Lazy<T> {
+impl<T: Load> Lazy<T> {
     pub fn unwrap(&mut self, conn: Rc<RefCell<Connection>>) -> Result<&T, LoadError> {
         match self {
             &mut Lazy::Guid(id) => {
-                *self = Lazy::Object(Box::new(Connection::by_id::<T>(conn, id)
-                    .map_err(|_| LoadError::NotFound)?));
+                *self = Lazy::Object(Box::new(T::load(conn, id).map_err(|_| LoadError::NotFound)?));
 
                 if let &mut Lazy::Object(ref o) = self {
                     Ok(o)
@@ -94,3 +86,4 @@ impl fmt::Debug for LoadError {
         }
     }
 }
+

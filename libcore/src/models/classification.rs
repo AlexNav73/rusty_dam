@@ -4,7 +4,8 @@ use uuid::Uuid;
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use {Entity, Document};
+use {Entity, ToDto, FromDto, Load, LoadError};
+use es::EsDto;
 use connection::{App, Connection};
 
 pub struct Classification {
@@ -21,8 +22,6 @@ impl Classification {
 }
 
 impl Entity for Classification {
-    type Dto = ClassificationDto;
-
     fn create(app: &App) -> Classification {
         Classification {
             id: Uuid::new_v4(),
@@ -35,7 +34,12 @@ impl Entity for Classification {
         self.id
     }
 
-    fn map(&self) -> ClassificationDto {
+}
+
+impl ToDto for Classification {
+    type Dto = ClassificationDto;
+
+    fn to_dto(&self) -> ClassificationDto {
         ClassificationDto {
             id: self.id,
             full_path: match self.full_path {
@@ -46,18 +50,32 @@ impl Entity for Classification {
     }
 }
 
+impl Load for Classification {
+    fn load(_c: Rc<RefCell<Connection>>, _id: Uuid) -> Result<Self, LoadError> {
+        unimplemented!()
+    }
+}
+
 #[derive(Serialize, Deserialize)]
 pub struct ClassificationDto {
     id: Uuid,
     full_path: String,
 }
 
-impl Document<Classification> for ClassificationDto {
+impl EsDto for ClassificationDto {
     fn doc_type() -> &'static str {
         "classifications"
     }
 
-    fn map(self, conn: Rc<RefCell<Connection>>) -> Classification {
+    fn id(&self) -> Uuid {
+        self.id
+    }
+}
+
+impl FromDto for ClassificationDto {
+    type Item = Classification;
+
+    fn from_dto(self, conn: Rc<RefCell<Connection>>) -> Classification {
         Classification {
             id: self.id,
             full_path: Some(self.full_path),
@@ -65,3 +83,4 @@ impl Document<Classification> for ClassificationDto {
         }
     }
 }
+

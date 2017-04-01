@@ -4,15 +4,14 @@ use uuid::Uuid;
 use std::rc::Rc;
 use std::cell::RefCell;
 
-use es::{EsRepository, EsError};
+use {Entity, Load, LoadError};
+use es::{EsService, EsError, EsDto};
 use models::user::User;
 use configuration::Configuration;
 
-use Entity;
-
 pub struct Connection {
     is_logged_in: bool,
-    es_client: EsRepository,
+    es_client: EsService,
 }
 
 impl Connection {
@@ -20,7 +19,7 @@ impl Connection {
         Connection {
             // TODO: Proper impl
             is_logged_in: true,
-            es_client: EsRepository::new(config.es_url(), config.es_index_name()),
+            es_client: EsService::new(config.es_url(), config.es_index_name()),
         }
     }
 
@@ -28,14 +27,11 @@ impl Connection {
         self.is_logged_in
     }
 
-    pub fn by_id<T: Entity>(conn: Rc<RefCell<Connection>>, id: Uuid) -> Result<T, EsError> {
-        let mut this = conn.borrow_mut();
-        this.es_client
-            .get::<T>(conn.clone(), id)
-            .map_err(|_| EsError::NotFound)
+    pub fn es(&mut self) -> &mut EsService {
+        &mut self.es_client
     }
 
-    pub fn save<T: Entity>(conn: Rc<RefCell<Connection>>, item: &T) -> Result<(), EsError> {
+    pub fn save<T: EsDto>(conn: Rc<RefCell<Connection>>, item: &T) -> Result<(), EsError> {
         if !conn.borrow().authorized() {
             panic!("Connection not establish. You mast Login first");
         }
@@ -65,15 +61,16 @@ impl App {
         &self.user
     }
 
-    pub fn get<T: Entity>(&self, id: Uuid) -> Result<T, EsError> {
-        Connection::by_id(self.connection(), id)
+    pub fn get<T: Load>(&self, id: Uuid) -> Result<T, LoadError> {
+        T::load(self.connection(), id)
     }
 
     pub fn create<T: Entity>(&self) -> T {
         T::create(self)
     }
 
-    pub fn save<T: Entity>(&self, item: &T) -> Result<(), EsError> {
+    pub fn save<T: EsDto>(&self, item: &T) -> Result<(), EsError> {
         Connection::save(self.connection(), item)
     }
 }
+

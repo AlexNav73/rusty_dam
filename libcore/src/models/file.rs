@@ -5,7 +5,8 @@ use std::cell::RefCell;
 use std::path::Path;
 use std::rc::Rc;
 
-use {Entity, Document};
+use {Entity, ToDto, FromDto, Load, LoadError};
+use es::EsDto;
 use connection::{App, Connection};
 
 pub enum FileError {
@@ -32,14 +33,8 @@ impl File {
 }
 
 impl Entity for File {
-    type Dto = FileDto;
-
     fn id(&self) -> Uuid {
         self.id
-    }
-
-    fn map(&self) -> FileDto {
-        FileDto { id: self.id }
     }
 
     fn create(app: &App) -> File {
@@ -51,17 +46,39 @@ impl Entity for File {
     }
 }
 
+impl ToDto for File {
+    type Dto = FileDto;
+
+    fn to_dto(&self) -> FileDto {
+        FileDto { id: self.id }
+    }
+}
+
+impl Load for File {
+    fn load(_c: Rc<RefCell<Connection>>, _id: Uuid) -> Result<Self, LoadError> {
+        unimplemented!()
+    }
+}
+
 #[derive(Serialize, Deserialize)]
 pub struct FileDto {
     id: Uuid,
 }
 
-impl Document<File> for FileDto {
+impl EsDto for FileDto {
     fn doc_type() -> &'static str {
         "files"
     }
 
-    fn map(self, conn: Rc<RefCell<Connection>>) -> File {
+    fn id(&self) -> Uuid {
+        self.id
+    }
+}
+
+impl FromDto for FileDto {
+    type Item = File;
+
+    fn from_dto(self, conn: Rc<RefCell<Connection>>) -> File {
         File {
             id: self.id,
             path: None,
@@ -69,3 +86,4 @@ impl Document<File> for FileDto {
         }
     }
 }
+

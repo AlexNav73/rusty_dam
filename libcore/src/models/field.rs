@@ -4,7 +4,8 @@ use uuid::Uuid;
 use std::rc::Rc;
 use std::cell::RefCell;
 
-use {Entity, Document};
+use {Entity, ToDto, FromDto, Load, LoadError};
+use es::EsDto;
 use connection::{App, Connection};
 
 pub struct Field {
@@ -13,14 +14,8 @@ pub struct Field {
 }
 
 impl Entity for Field {
-    type Dto = FieldDto;
-
     fn id(&self) -> Uuid {
         self.id
-    }
-
-    fn map(&self) -> FieldDto {
-        FieldDto { id: self.id }
     }
 
     fn create(app: &App) -> Field {
@@ -31,20 +26,43 @@ impl Entity for Field {
     }
 }
 
+impl ToDto for Field {
+    type Dto = FieldDto;
+
+    fn to_dto(&self) -> FieldDto {
+        FieldDto { id: self.id }
+    }
+}
+
+impl Load for Field {
+    fn load(_c: Rc<RefCell<Connection>>, _id: Uuid) -> Result<Self, LoadError> {
+        unimplemented!()
+    }
+}
+
 #[derive(Serialize, Deserialize)]
 pub struct FieldDto {
     id: Uuid,
 }
 
-impl Document<Field> for FieldDto {
+impl EsDto for FieldDto {
     fn doc_type() -> &'static str {
         "fields"
     }
 
-    fn map(self, conn: Rc<RefCell<Connection>>) -> Field {
+    fn id(&self) -> Uuid {
+        self.id
+    }
+}
+
+impl FromDto for FieldDto {
+    type Item = Field;
+
+    fn from_dto(self, conn: Rc<RefCell<Connection>>) -> Field {
         Field {
             id: self.id,
             connection: conn,
         }
     }
 }
+
