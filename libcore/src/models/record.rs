@@ -107,4 +107,3 @@ impl FromDto for RecordDto {
         }
     }
 }
-

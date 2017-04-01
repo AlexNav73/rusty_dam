@@ -12,12 +12,16 @@ pub mod fields;
 pub mod files;
 pub mod classifications;
 
-pub trait EntityCollection<T> where T: Load {
+pub trait EntityCollection<T>
+    where T: Load
+{
     fn ids(&self) -> Ids<T>;
     fn iter_mut(&mut self) -> IterMut<T>;
 }
 
-pub struct Ids<'a, T> where T: Load + 'a {
+pub struct Ids<'a, T>
+    where T: Load + 'a
+{
     inner: Keys<'a, Uuid, Lazy<T>>,
 }
 
@@ -35,7 +39,9 @@ impl<'a, T: Load + 'a> Iterator for Ids<'a, T> {
     }
 }
 
-pub struct IterMut<'a, T> where T: Load + 'a {
+pub struct IterMut<'a, T>
+    where T: Load + 'a
+{
     inner: ValuesMut<'a, Uuid, Lazy<T>>,
     connection: Rc<RefCell<Connection>>,
 }

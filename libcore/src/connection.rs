@@ -73,4 +73,3 @@ impl App {
         Connection::save(self.connection(), item)
     }
 }
-

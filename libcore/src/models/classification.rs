@@ -33,7 +33,6 @@ impl Entity for Classification {
     fn id(&self) -> Uuid {
         self.id
     }
-
 }
 
 impl ToDto for Classification {
@@ -83,4 +82,3 @@ impl FromDto for ClassificationDto {
         }
     }
 }
-

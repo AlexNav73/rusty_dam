@@ -13,7 +13,7 @@ use rs_es::operations::get::GetResult;
 use rs_es::operations::index::IndexResult;
 use rs_es::operations::search::{SearchHitsResult, SearchResult};
 
-use { FromDto };
+use FromDto;
 use connection::Connection;
 
 pub trait EsDto: FromDto + Serialize + Deserialize {
@@ -35,9 +35,7 @@ impl EsClient {
            })
     }
 
-    fn index<'a, 'b, T: EsDto>(&'a mut self,
-                                    doc: &'b T)
-                                    -> Result<IndexResult, error::EsError> {
+    fn index<'a, 'b, T: EsDto>(&'a mut self, doc: &'b T) -> Result<IndexResult, error::EsError> {
         self.client
             .index(&self.index, T::doc_type())
             .with_doc(doc)
@@ -45,9 +43,7 @@ impl EsClient {
             .send()
     }
 
-    fn get<'a, 'b, T: EsDto>(&'a mut self,
-                                  id: Uuid)
-                                  -> Result<GetResult<T>, error::EsError> {
+    fn get<'a, 'b, T: EsDto>(&'a mut self, id: Uuid) -> Result<GetResult<T>, error::EsError> {
         self.client
             .get(&self.index, id.hyphenated().to_string().as_str())
             .with_doc_type(T::doc_type())
@@ -55,8 +51,8 @@ impl EsClient {
     }
 
     fn search<'a, 'b, T: EsDto>(&'a mut self,
-                                     q: &'b Query)
-                                     -> Result<SearchResult<T>, error::EsError> {
+                                q: &'b Query)
+                                -> Result<SearchResult<T>, error::EsError> {
         self.client
             .search_query()
             .with_indexes(&[&self.index])
@@ -135,8 +131,12 @@ impl EsService {
         EsService { client: EsRepository::new(url, index) }
     }
 
-    pub fn by_id<T: FromDto + EsDto>(&mut self, conn: Rc<RefCell<Connection>>, id: Uuid) -> Result<T::Item, EsError> {
-        self.client.get::<T>(id)
+    pub fn by_id<T: FromDto + EsDto>(&mut self,
+                                     conn: Rc<RefCell<Connection>>,
+                                     id: Uuid)
+                                     -> Result<T::Item, EsError> {
+        self.client
+            .get::<T>(id)
             .map_err(|_| EsError::NotFound)
             .and_then(|d| Ok(d.from_dto(conn)))
     }
@@ -145,4 +145,3 @@ impl EsService {
         self.client.index(item)
     }
 }
-
