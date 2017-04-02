@@ -6,7 +6,7 @@ use std::path::Path;
 use std::rc::Rc;
 
 use {Entity, ToDto, FromDto, Load, LoadError};
-use es::EsDto;
+use models::es::FileDto;
 use connection::{App, Connection};
 
 pub enum FileError {
@@ -72,17 +72,3 @@ impl Load for File {
     }
 }
 
-#[derive(Serialize, Deserialize)]
-pub struct FileDto {
-    id: Uuid,
-}
-
-impl EsDto for FileDto {
-    fn doc_type() -> &'static str {
-        "files"
-    }
-
-    fn id(&self) -> Uuid {
-        self.id
-    }
-}

@@ -5,7 +5,7 @@ use std::rc::Rc;
 use std::cell::RefCell;
 
 use {Entity, ToDto, FromDto, Load, LoadError};
-use es::EsDto;
+use models::es::FieldDto;
 use connection::{App, Connection};
 
 pub struct Field {
@@ -51,17 +51,3 @@ impl Load for Field {
     }
 }
 
-#[derive(Serialize, Deserialize)]
-pub struct FieldDto {
-    id: Uuid,
-}
-
-impl EsDto for FieldDto {
-    fn doc_type() -> &'static str {
-        "fields"
-    }
-
-    fn id(&self) -> Uuid {
-        self.id
-    }
-}

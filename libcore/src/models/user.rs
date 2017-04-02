@@ -5,6 +5,7 @@ use std::rc::Rc;
 use std::cell::RefCell;
 
 use {ToDto, FromDto, Load, LoadError};
+use models::es::UserDto;
 use connection::Connection;
 
 pub struct User {
@@ -72,11 +73,4 @@ impl ToDto for User {
             passwd: self.password.clone()
         }
     }
-}
-
-#[derive(Serialize, Deserialize)]
-pub struct UserDto {
-    id: Uuid,
-    login: String,
-    passwd: String
 }

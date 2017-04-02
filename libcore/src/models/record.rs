@@ -7,9 +7,10 @@ use std::cell::RefCell;
 
 use {Entity, ToDto, FromDto};
 //use models::file::File;
-use es::{SystemInfo, EsDto};
+use es::{SystemInfo};
 use connection::{App, Connection};
 
+use models::es::RecordDto;
 use models::collections::EntityCollection;
 use models::collections::fields::FieldCollection;
 use models::collections::files::FileCollection;
@@ -90,20 +91,3 @@ impl FromDto for Record {
     }
 }
 
-#[derive(Serialize, Deserialize)]
-pub struct RecordDto {
-    fields: Vec<Uuid>,
-    classifications: Vec<Uuid>,
-    files: Vec<Uuid>,
-    system: SystemInfo,
-}
-
-impl EsDto for RecordDto {
-    fn doc_type() -> &'static str {
-        "records"
-    }
-
-    fn id(&self) -> Uuid {
-        self.system.id
-    }
-}

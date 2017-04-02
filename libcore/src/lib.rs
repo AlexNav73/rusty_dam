@@ -15,6 +15,7 @@ extern crate chrono;
 mod configuration;
 mod connection;
 mod es;
+mod pg;
 mod models;
 mod schema;
 

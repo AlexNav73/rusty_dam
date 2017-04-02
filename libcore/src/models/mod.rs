@@ -6,3 +6,4 @@ pub mod classification;
 pub mod user;
 pub mod collections;
 pub mod pg;
+pub mod es;

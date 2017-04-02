@@ -5,7 +5,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use {Entity, ToDto, FromDto, Load, LoadError};
-use es::EsDto;
+use models::es::ClassificationDto;
 use connection::{App, Connection};
 
 pub struct Classification {
@@ -64,21 +64,5 @@ impl FromDto for Classification {
 impl Load for Classification {
     fn load(_c: Rc<RefCell<Connection>>, _id: Uuid) -> Result<Self, LoadError> {
         unimplemented!()
-    }
-}
-
-#[derive(Serialize, Deserialize)]
-pub struct ClassificationDto {
-    id: Uuid,
-    full_path: String,
-}
-
-impl EsDto for ClassificationDto {
-    fn doc_type() -> &'static str {
-        "classifications"
-    }
-
-    fn id(&self) -> Uuid {
-        self.id
     }
 }
