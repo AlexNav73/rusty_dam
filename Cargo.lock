@@ -3,6 +3,9 @@ name = "libcore"
 version = "0.1.0"
 dependencies = [
  "chrono 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "diesel 0.12.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "diesel_codegen 0.12.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "dotenv 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "rs-es 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 0.9.7 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_derive 0.9.7 (registry+https://github.com/rust-lang/crates.io-index)",

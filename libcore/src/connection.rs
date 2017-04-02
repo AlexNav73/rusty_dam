@@ -1,8 +1,13 @@
 
 use uuid::Uuid;
+use diesel::prelude::*;
+use diesel::pg::PgConnection;
+use diesel::Connection as Conn;
+use dotenv::dotenv;
 
 use std::rc::Rc;
 use std::cell::RefCell;
+use std::env;
 
 use {Entity, Load, LoadError};
 use es::{EsService, EsError, EsDto};
@@ -12,14 +17,19 @@ use configuration::Configuration;
 pub struct Connection {
     is_logged_in: bool,
     es_client: EsService,
+    pg_client: PgConnection
 }
 
 impl Connection {
     pub fn new<C: Configuration>(config: C) -> Connection {
+        dotenv().ok();
+
+        let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
         Connection {
             // TODO: Proper impl
             is_logged_in: true,
             es_client: EsService::new(config.es_url(), config.es_index_name()),
+            pg_client: PgConnection::establish(&database_url).expect(&format!("Error connecting to {}", database_url))
         }
     }
 

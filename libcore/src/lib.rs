@@ -1,9 +1,12 @@
 #![allow(dead_code)]
 
-#[macro_use]
-extern crate serde_derive;
+#[macro_use] extern crate serde_derive;
 extern crate serde_json;
 extern crate serde;
+
+#[macro_use] extern crate diesel;
+#[macro_use] extern crate diesel_codegen;
+extern crate dotenv;
 
 extern crate uuid;
 extern crate rs_es;
@@ -13,6 +16,7 @@ mod configuration;
 mod connection;
 mod es;
 mod models;
+mod schema;
 
 use serde::{Serialize, Deserialize};
 
