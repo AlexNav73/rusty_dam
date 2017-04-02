@@ -34,6 +34,17 @@ impl ToDto for Field {
     }
 }
 
+impl FromDto for Field {
+    type Dto = FieldDto;
+
+    fn from_dto(dto: Self::Dto, conn: Rc<RefCell<Connection>>) -> Field {
+        Field {
+            id: dto.id,
+            connection: conn,
+        }
+    }
+}
+
 impl Load for Field {
     fn load(_c: Rc<RefCell<Connection>>, _id: Uuid) -> Result<Self, LoadError> {
         unimplemented!()
@@ -52,16 +63,5 @@ impl EsDto for FieldDto {
 
     fn id(&self) -> Uuid {
         self.id
-    }
-}
-
-impl FromDto for FieldDto {
-    type Item = Field;
-
-    fn from_dto(self, conn: Rc<RefCell<Connection>>) -> Field {
-        Field {
-            id: self.id,
-            connection: conn,
-        }
     }
 }

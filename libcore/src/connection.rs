@@ -1,6 +1,6 @@
 
 use uuid::Uuid;
-use diesel::prelude::*;
+//use diesel::prelude::*;
 use diesel::pg::PgConnection;
 use diesel::Connection as Conn;
 use dotenv::dotenv;

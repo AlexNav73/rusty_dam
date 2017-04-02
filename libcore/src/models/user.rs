@@ -43,11 +43,23 @@ impl User {
     }
 }
 
-#[derive(Serialize, Deserialize)]
-pub struct UserDto {
-    id: Uuid,
-    login: String,
-    passwd: String
+impl FromDto for User {
+    type Dto = UserDto;
+
+    fn from_dto(dto: Self::Dto, conn: Rc<RefCell<Connection>>) -> User {
+        User {
+            id: dto.id,
+            login: dto.login,
+            password: dto.passwd,
+            connection: conn
+        }
+    }
+}
+
+impl Load for User {
+    fn load(_c: Rc<RefCell<Connection>>, _id: Uuid) -> Result<Self, LoadError> {
+        unimplemented!()
+    }
 }
 
 impl ToDto for User {
@@ -62,21 +74,9 @@ impl ToDto for User {
     }
 }
 
-impl Load for User {
-    fn load(_c: Rc<RefCell<Connection>>, _id: Uuid) -> Result<Self, LoadError> {
-        unimplemented!()
-    }
-}
-
-impl FromDto for UserDto {
-    type Item = User;
-
-    fn from_dto(self, conn: Rc<RefCell<Connection>>) -> User {
-        User {
-            id: self.id,
-            login: self.login,
-            password: self.passwd,
-            connection: conn
-        }
-    }
+#[derive(Serialize, Deserialize)]
+pub struct UserDto {
+    id: Uuid,
+    login: String,
+    passwd: String
 }

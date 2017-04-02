@@ -49,6 +49,18 @@ impl ToDto for Classification {
     }
 }
 
+impl FromDto for Classification {
+    type Dto = ClassificationDto;
+
+    fn from_dto(dto: Self::Dto, conn: Rc<RefCell<Connection>>) -> Classification {
+        Classification {
+            id: dto.id,
+            full_path: Some(dto.full_path),
+            connection: conn,
+        }
+    }
+}
+
 impl Load for Classification {
     fn load(_c: Rc<RefCell<Connection>>, _id: Uuid) -> Result<Self, LoadError> {
         unimplemented!()
@@ -68,17 +80,5 @@ impl EsDto for ClassificationDto {
 
     fn id(&self) -> Uuid {
         self.id
-    }
-}
-
-impl FromDto for ClassificationDto {
-    type Item = Classification;
-
-    fn from_dto(self, conn: Rc<RefCell<Connection>>) -> Classification {
-        Classification {
-            id: self.id,
-            full_path: Some(self.full_path),
-            connection: conn,
-        }
     }
 }

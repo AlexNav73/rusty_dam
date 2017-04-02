@@ -42,18 +42,18 @@ pub trait Entity {
 }
 
 pub trait ToDto {
-    type Dto: FromDto;
+    type Dto: Serialize + Deserialize;
 
     fn to_dto(&self) -> Self::Dto;
 }
 
-pub trait FromDto: Serialize + Deserialize {
-    type Item;
+pub trait FromDto {
+    type Dto: Serialize + Deserialize;
 
-    fn from_dto(self, conn: Rc<RefCell<Connection>>) -> Self::Item;
+    fn from_dto(dto: Self::Dto, conn: Rc<RefCell<Connection>>) -> Self;
 }
 
-pub trait Load: Sized + ToDto {
+pub trait Load: Sized + FromDto {
     fn load(c: Rc<RefCell<Connection>>, id: Uuid) -> Result<Self, LoadError>;
 }
 

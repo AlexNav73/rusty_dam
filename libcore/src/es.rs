@@ -16,7 +16,7 @@ use rs_es::operations::search::{SearchHitsResult, SearchResult};
 use FromDto;
 use connection::Connection;
 
-pub trait EsDto: FromDto + Serialize + Deserialize {
+pub trait EsDto: Serialize + Deserialize {
     fn doc_type() -> &'static str;
     fn id(&self) -> Uuid;
 }
@@ -131,14 +131,14 @@ impl EsService {
         EsService { client: EsRepository::new(url, index) }
     }
 
-    pub fn by_id<T: FromDto + EsDto>(&mut self,
+    pub fn by_id<D: EsDto, T: FromDto<Dto=D>>(&mut self,
                                      conn: Rc<RefCell<Connection>>,
                                      id: Uuid)
-                                     -> Result<T::Item, EsError> {
+                                     -> Result<T, EsError> {
         self.client
-            .get::<T>(id)
+            .get::<D>(id)
             .map_err(|_| EsError::NotFound)
-            .and_then(|d| Ok(d.from_dto(conn)))
+            .and_then(|d| Ok(T::from_dto(d, conn)))
     }
 
     pub fn index<T: EsDto>(&mut self, item: &T) -> Result<(), EsError> {

@@ -54,6 +54,18 @@ impl ToDto for File {
     }
 }
 
+impl FromDto for File {
+    type Dto = FileDto;
+
+    fn from_dto(dto: Self::Dto, conn: Rc<RefCell<Connection>>) -> File {
+        File {
+            id: dto.id,
+            path: None,
+            connection: conn,
+        }
+    }
+}
+
 impl Load for File {
     fn load(_c: Rc<RefCell<Connection>>, _id: Uuid) -> Result<Self, LoadError> {
         unimplemented!()
@@ -72,17 +84,5 @@ impl EsDto for FileDto {
 
     fn id(&self) -> Uuid {
         self.id
-    }
-}
-
-impl FromDto for FileDto {
-    type Item = File;
-
-    fn from_dto(self, conn: Rc<RefCell<Connection>>) -> File {
-        File {
-            id: self.id,
-            path: None,
-            connection: conn,
-        }
     }
 }

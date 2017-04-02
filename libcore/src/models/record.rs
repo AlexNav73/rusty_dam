@@ -70,6 +70,26 @@ impl ToDto for Record {
     }
 }
 
+impl FromDto for Record {
+    type Dto = RecordDto;
+
+    fn from_dto(dto: Self::Dto, conn: Rc<RefCell<Connection>>) -> Record {
+        Record {
+            id: dto.system.id,
+            fields: FieldCollection::from_iter(dto.fields.iter(), conn.clone()),
+            classifications: ClassificationCollection::from_iter(dto.classifications.iter(),
+                                                                 conn.clone()),
+            files: FileCollection::from_iter(dto.files.iter(), conn.clone()),
+            created_by: dto.system.created_by.to_string(),
+            created_on: DateTime::from_utc(dto.system.created_on, UTC),
+            modified_by: dto.system.modified_by.to_string(),
+            modified_on: DateTime::from_utc(dto.system.modified_on, UTC),
+            is_new: false,
+            connection: conn,
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize)]
 pub struct RecordDto {
     fields: Vec<Uuid>,
@@ -85,25 +105,5 @@ impl EsDto for RecordDto {
 
     fn id(&self) -> Uuid {
         self.system.id
-    }
-}
-
-impl FromDto for RecordDto {
-    type Item = Record;
-
-    fn from_dto(self, conn: Rc<RefCell<Connection>>) -> Record {
-        Record {
-            id: self.system.id,
-            fields: FieldCollection::from_iter(self.fields.iter(), conn.clone()),
-            classifications: ClassificationCollection::from_iter(self.classifications.iter(),
-                                                                 conn.clone()),
-            files: FileCollection::from_iter(self.files.iter(), conn.clone()),
-            created_by: self.system.created_by.to_string(),
-            created_on: DateTime::from_utc(self.system.created_on, UTC),
-            modified_by: self.system.modified_by.to_string(),
-            modified_on: DateTime::from_utc(self.system.modified_on, UTC),
-            is_new: false,
-            connection: conn,
-        }
     }
 }
