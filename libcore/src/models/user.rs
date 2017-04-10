@@ -52,7 +52,7 @@ impl FromDto for User {
             id: dto.id,
             login: dto.login,
             password: dto.passwd,
-            connection: conn
+            connection: conn,
         }
     }
 }
@@ -70,7 +70,7 @@ impl ToDto for User {
         UserDto {
             id: self.id,
             login: self.login.clone(),
-            passwd: self.password.clone()
+            passwd: self.password.clone(),
         }
     }
 }

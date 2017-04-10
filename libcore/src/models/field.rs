@@ -30,7 +30,9 @@ impl ToDto for Field {
     type Dto = FieldDto;
 
     fn to_dto(&self) -> FieldDto {
-        FieldDto { id: self.id }
+        FieldDto {
+            id: self.id
+        }
     }
 }
 
@@ -50,4 +52,3 @@ impl Load for Field {
         unimplemented!()
     }
 }
-

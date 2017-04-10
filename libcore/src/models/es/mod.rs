@@ -24,36 +24,16 @@ pub struct FieldDto {
     pub id: Uuid,
 }
 
-impl EsDto for FieldDto {
-    fn doc_type() -> &'static str {
-        "fields"
-    }
-
-    fn id(&self) -> Uuid {
-        self.id
-    }
-}
-
 #[derive(Serialize, Deserialize)]
 pub struct FileDto {
     pub id: Uuid,
 }
 
-impl EsDto for FileDto {
-    fn doc_type() -> &'static str {
-        "files"
-    }
-
-    fn id(&self) -> Uuid {
-        self.id
-    }
-}
-
 #[derive(Serialize, Deserialize)]
 pub struct RecordDto {
-    pub fields: Vec<Uuid>,
-    pub classifications: Vec<Uuid>,
-    pub files: Vec<Uuid>,
+    pub fields: Vec<FieldDto>,
+    pub classifications: Vec<ClassificationDto>,
+    pub files: Vec<FileDto>,
     pub system: SystemInfo,
 }
 
@@ -71,5 +51,5 @@ impl EsDto for RecordDto {
 pub struct UserDto {
     pub id: Uuid,
     pub login: String,
-    pub passwd: String
+    pub passwd: String,
 }

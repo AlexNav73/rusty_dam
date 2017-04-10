@@ -5,9 +5,8 @@ use chrono::{DateTime, UTC};
 use std::rc::Rc;
 use std::cell::RefCell;
 
-use {Entity, ToDto, FromDto};
-//use models::file::File;
-use es::{SystemInfo};
+use {Load, LoadError, Entity, ToDto, FromDto};
+use es::SystemInfo;
 use connection::{App, Connection};
 
 use models::es::RecordDto;
@@ -18,9 +17,9 @@ use models::collections::classifications::ClassificationCollection;
 
 pub struct Record {
     id: Uuid,
-    fields: FieldCollection,
-    classifications: ClassificationCollection,
-    files: FileCollection,
+    fields: RefCell<FieldCollection>,
+    classifications: RefCell<ClassificationCollection>,
+    files: RefCell<FileCollection>,
     created_by: String,
     created_on: DateTime<UTC>,
     modified_by: String,
@@ -35,19 +34,17 @@ impl Entity for Record {
     }
 
     fn create(app: &App) -> Record {
-        let conn = app.connection();
-
         Record {
             id: Uuid::new_v4(),
-            fields: FieldCollection::new(conn.clone()),
-            classifications: ClassificationCollection::new(conn.clone()),
-            files: FileCollection::new(conn.clone()),
+            fields: RefCell::new(FieldCollection::new(app.connection())),
+            classifications: RefCell::new(ClassificationCollection::new(app.connection())),
+            files: RefCell::new(FileCollection::new(app.connection())),
             created_on: UTC::now(),
             modified_on: UTC::now(),
             created_by: app.user().login().to_string(),
             modified_by: app.user().login().to_string(),
             is_new: true,
-            connection: conn,
+            connection: app.connection(),
         }
     }
 }
@@ -57,9 +54,9 @@ impl ToDto for Record {
 
     fn to_dto(&self) -> RecordDto {
         RecordDto {
-            fields: self.fields.ids().collect(),
-            classifications: self.classifications.ids().collect(),
-            files: self.files.ids().collect(),
+            fields: to_dto_collection(&mut *self.fields.borrow_mut()),
+            classifications: to_dto_collection(&mut *self.classifications.borrow_mut()),
+            files: to_dto_collection(&mut *self.files.borrow_mut()),
             system: SystemInfo {
                 id: self.id,
                 created_by: self.created_by.to_string(),
@@ -71,16 +68,30 @@ impl ToDto for Record {
     }
 }
 
+fn to_dto_collection<T: Load, C: EntityCollection<T>>(collection: &mut C)
+                                                      -> Vec<<T as ToDto>::Dto> {
+    collection
+        .iter_mut()
+        .filter(|x| x.is_ok())
+        .map(|x| x.unwrap().to_dto())
+        .collect()
+}
+
 impl FromDto for Record {
     type Dto = RecordDto;
 
     fn from_dto(dto: Self::Dto, conn: Rc<RefCell<Connection>>) -> Record {
         Record {
             id: dto.system.id,
-            fields: FieldCollection::from_iter(dto.fields.iter(), conn.clone()),
-            classifications: ClassificationCollection::from_iter(dto.classifications.iter(),
-                                                                 conn.clone()),
-            files: FileCollection::from_iter(dto.files.iter(), conn.clone()),
+            fields: RefCell::new(FieldCollection::from_iter(dto.fields.into_iter().map(|x| x.id),
+                                                            conn.clone())),
+            classifications:
+                RefCell::new(ClassificationCollection::from_iter(dto.classifications
+                                                                     .into_iter()
+                                                                     .map(|x| x.id),
+                                                                 conn.clone())),
+            files: RefCell::new(FileCollection::from_iter(dto.files.into_iter().map(|x| x.id),
+                                                          conn.clone())),
             created_by: dto.system.created_by.to_string(),
             created_on: DateTime::from_utc(dto.system.created_on, UTC),
             modified_by: dto.system.modified_by.to_string(),
@@ -91,3 +102,11 @@ impl FromDto for Record {
     }
 }
 
+impl Load for Record {
+    fn load(c: Rc<RefCell<Connection>>, id: Uuid) -> Result<Self, LoadError> {
+        c.borrow_mut()
+            .es()
+            .by_id(c.clone(), id)
+            .map_err(|_| LoadError::NotFound)
+    }
+}

@@ -1,7 +1,6 @@
 [workspace]
 members = [
    "libcore",
-   "app",
-   "app_db"
+   "app"
 ]
 

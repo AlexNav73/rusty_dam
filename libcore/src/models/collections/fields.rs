@@ -24,11 +24,11 @@ impl FieldCollection {
     }
 
     pub fn from_iter<'a, T>(iter: T, conn: Rc<RefCell<Connection>>) -> Self
-        where T: IntoIterator<Item = &'a Uuid>
+        where T: IntoIterator<Item = Uuid>
     {
         FieldCollection {
             fields: iter.into_iter()
-                .map(|&id| (id, Lazy::Guid(id)))
+                .map(|id| (id, Lazy::Guid(id)))
                 .collect(),
             connection: conn,
         }

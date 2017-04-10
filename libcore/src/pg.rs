@@ -1,17 +1,28 @@
 
+use uuid::Uuid;
+
 use diesel::prelude::*;
 use diesel::pg::PgConnection;
-use diesel::Connection as Conn;
+
+use LoadError;
+use models::pg::schema::*;
+
+trait PgDto {}
 
 struct PgClient {
-    connection: PgConnection
+    connection: PgConnection,
 }
 
 impl PgClient {
     fn new(url: String) -> PgClient {
         PgClient {
-            connection: PgConnection::establish(&url).expect(&format!("Error connecting to {}", url))
+            connection: PgConnection::establish(&url).expect(&format!("Error connecting to {}",
+                                                                      url)),
         }
+    }
+
+    fn load<T: PgDto>(&self, _id: Uuid) -> Result<T, LoadError> {
+        unimplemented!()
     }
 }
 
@@ -22,4 +33,3 @@ impl PgService {
         PgService
     }
 }
-

@@ -1,11 +1,14 @@
 #![allow(dead_code)]
 
-#[macro_use] extern crate serde_derive;
+#[macro_use]
+extern crate serde_derive;
 extern crate serde_json;
 extern crate serde;
 
-#[macro_use] extern crate diesel;
-#[macro_use] extern crate diesel_codegen;
+#[macro_use]
+extern crate diesel;
+#[macro_use]
+extern crate diesel_codegen;
 extern crate dotenv;
 
 extern crate uuid;
@@ -17,7 +20,6 @@ mod connection;
 mod es;
 mod pg;
 mod models;
-mod schema;
 
 use serde::{Serialize, Deserialize};
 
@@ -54,7 +56,7 @@ pub trait FromDto {
     fn from_dto(dto: Self::Dto, conn: Rc<RefCell<Connection>>) -> Self;
 }
 
-pub trait Load: Sized + FromDto {
+pub trait Load: Sized + FromDto + ToDto {
     fn load(c: Rc<RefCell<Connection>>, id: Uuid) -> Result<Self, LoadError>;
 }
 

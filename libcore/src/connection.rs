@@ -8,14 +8,14 @@ use std::env;
 
 use {Entity, Load, LoadError};
 use es::{EsService, EsError, EsDto};
-use pg::{PgService};
+use pg::PgService;
 use models::user::User;
 use configuration::Configuration;
 
 pub struct Connection {
     is_logged_in: bool,
     es_client: EsService,
-    pg_client: PgService
+    pg_client: PgService,
 }
 
 impl Connection {
@@ -27,7 +27,7 @@ impl Connection {
             // TODO: Proper impl
             is_logged_in: true,
             es_client: EsService::new(config.es_url(), config.es_index_name()),
-            pg_client: PgService::new(database_url)
+            pg_client: PgService::new(database_url),
         }
     }
 

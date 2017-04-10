@@ -131,10 +131,10 @@ impl EsService {
         EsService { client: EsRepository::new(url, index) }
     }
 
-    pub fn by_id<D: EsDto, T: FromDto<Dto=D>>(&mut self,
-                                     conn: Rc<RefCell<Connection>>,
-                                     id: Uuid)
-                                     -> Result<T, EsError> {
+    pub fn by_id<D: EsDto, T: FromDto<Dto = D>>(&mut self,
+                                                conn: Rc<RefCell<Connection>>,
+                                                id: Uuid)
+                                                -> Result<T, EsError> {
         self.client
             .get::<D>(id)
             .map_err(|_| EsError::NotFound)
