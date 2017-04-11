@@ -2,6 +2,7 @@
 use uuid::Uuid;
 
 use es::{SystemInfo, EsDto};
+use models::field::FieldValue;
 
 #[derive(Serialize, Deserialize)]
 pub struct ClassificationDto {
@@ -22,6 +23,8 @@ impl EsDto for ClassificationDto {
 #[derive(Serialize, Deserialize)]
 pub struct FieldDto {
     pub id: Uuid,
+    pub name: String,
+    pub value: FieldValue,
 }
 
 #[derive(Serialize, Deserialize)]
