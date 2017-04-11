@@ -53,12 +53,14 @@ impl ToDto for Field {
     type Dto = FieldDto;
 
     fn to_dto(&self) -> FieldDto {
-        if self.name.is_empty() { panic!("Field name is empty"); }
+        if self.name.is_empty() {
+            panic!("Field name is empty");
+        }
 
         FieldDto {
             id: self.id,
             name: self.name.clone(),
-            value: self.value.clone()
+            value: self.value.clone(),
         }
     }
 }
@@ -87,7 +89,7 @@ pub enum FieldValue {
     Number(i64),
     Boolean(bool),
     Text(String),
-    Empty
+    Empty,
 }
 
 impl From<i64> for FieldValue {

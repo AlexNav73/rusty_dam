@@ -7,7 +7,7 @@ use std::cell::RefCell;
 use std::env;
 
 use {Entity, Load, LoadError};
-use es::{EsService, EsError, EsDto};
+use es::EsService;
 use pg::PgService;
 use models::user::User;
 use configuration::Configuration;
@@ -37,13 +37,6 @@ impl Connection {
 
     pub fn es(&mut self) -> &mut EsService {
         &mut self.es_client
-    }
-
-    pub fn save<T: EsDto>(conn: Rc<RefCell<Connection>>, item: &T) -> Result<(), EsError> {
-        if !conn.borrow().authorized() {
-            panic!("Connection not establish. You mast Login first");
-        }
-        conn.borrow_mut().es_client.index(item)
     }
 }
 
@@ -75,9 +68,5 @@ impl App {
 
     pub fn create<T: Entity>(&self) -> T {
         T::create(self)
-    }
-
-    pub fn save<T: EsDto>(&self, item: &T) -> Result<(), EsError> {
-        Connection::save(self.connection(), item)
     }
 }

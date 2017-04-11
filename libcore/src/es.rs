@@ -11,6 +11,7 @@ use rs_es::Client;
 use rs_es::query::*;
 use rs_es::operations::get::GetResult;
 use rs_es::operations::index::IndexResult;
+use rs_es::operations::delete::DeleteResult;
 use rs_es::operations::search::{SearchHitsResult, SearchResult};
 
 use FromDto;
@@ -40,6 +41,14 @@ impl EsClient {
             .index(&self.index, T::doc_type())
             .with_doc(doc)
             .with_id(doc.id().hyphenated().to_string().as_str())
+            .send()
+    }
+
+    fn delete<'a, 'b, T: EsDto>(&'a mut self, id: Uuid) -> Result<DeleteResult, error::EsError> {
+        self.client
+            .delete(&self.index,
+                    T::doc_type(),
+                    id.hyphenated().to_string().as_str())
             .send()
     }
 
@@ -120,6 +129,15 @@ impl EsRepository {
             Ok(_) => unreachable!(),
         }
     }
+
+    fn delete<T: EsDto>(&mut self, id: Uuid) -> Result<(), EsError> {
+        match self.client.delete::<T>(id) {
+            Ok(DeleteResult { found, .. }) if found => Ok(()),
+            Ok(DeleteResult { found, .. }) if !found => Err(EsError::NotFound),
+            Err(inner) => Err(EsError::Inner(inner)),
+            Ok(_) => unreachable!(),
+        }
+    }
 }
 
 pub struct EsService {
@@ -143,5 +161,9 @@ impl EsService {
 
     pub fn index<T: EsDto>(&mut self, item: &T) -> Result<(), EsError> {
         self.client.index(item)
+    }
+
+    pub fn delete<T: EsDto>(&mut self, id: Uuid) -> Result<(), EsError> {
+        self.client.delete::<T>(id)
     }
 }

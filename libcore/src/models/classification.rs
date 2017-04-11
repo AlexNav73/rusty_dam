@@ -15,6 +15,24 @@ pub struct Classification {
 }
 
 impl Classification {
+    pub fn save(&mut self) -> Result<(), LoadError> {
+        self.connection
+            .borrow_mut()
+            .es()
+            .index(&self.to_dto())
+            .map_err(|_| LoadError::NotFound)
+    }
+
+    fn delete(self) -> Result<(), LoadError> {
+        self.connection
+            .borrow_mut()
+            .es()
+            .delete::<ClassificationDto>(self.id)
+            .map_err(|_| LoadError::NotFound)
+    }
+}
+
+impl Classification {
     // TODO: Make name_path as ClassificationPath object
     fn set_name_path(&mut self, name_path: String) {
         self.full_path = Some(name_path)

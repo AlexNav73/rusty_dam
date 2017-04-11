@@ -28,6 +28,24 @@ pub struct Record {
     connection: Rc<RefCell<Connection>>,
 }
 
+impl Record {
+    pub fn delete(self) -> Result<(), LoadError> {
+        self.connection
+            .borrow_mut()
+            .es()
+            .delete::<RecordDto>(self.id)
+            .map_err(|_| LoadError::NotFound)
+    }
+
+    pub fn save(&mut self) -> Result<(), LoadError> {
+        self.connection
+            .borrow_mut()
+            .es()
+            .index(&self.to_dto())
+            .map_err(|_| LoadError::NotFound)
+    }
+}
+
 impl Entity for Record {
     fn id(&self) -> Uuid {
         self.id
@@ -53,10 +71,16 @@ impl ToDto for Record {
     type Dto = RecordDto;
 
     fn to_dto(&self) -> RecordDto {
+        let classifications = to_dto_collection(&mut *self.classifications.borrow_mut());
+        let files = to_dto_collection(&mut *self.files.borrow_mut()); 
+
+        if classifications.is_empty() { panic!("Record must be assign at least one classification"); }
+        if files.is_empty() { panic!("Record must contains at least one file"); }
+
         RecordDto {
             fields: to_dto_collection(&mut *self.fields.borrow_mut()),
-            classifications: to_dto_collection(&mut *self.classifications.borrow_mut()),
-            files: to_dto_collection(&mut *self.files.borrow_mut()),
+            classifications: classifications,
+            files: files,
             system: SystemInfo {
                 id: self.id,
                 created_by: self.created_by.to_string(),
