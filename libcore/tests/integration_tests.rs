@@ -35,14 +35,13 @@ fn create_record() {
 #[test]
 fn load_cls() {
     let mut c = App::new(Config);
-    let cls = c.get_cls_by_id(Uuid::parse_str("0f6c2408-8e68-4c75-a14f-1c84b63868c6").unwrap());
+    let cls = c.get_cls_by_id(Uuid::parse_str("f6e09bf2-4495-4047-8022-5a1317e67506").unwrap());
     assert!(cls.is_ok());
 }
 
 #[test]
 fn load_classification_path() {
     let mut c = App::new(Config);
-    let cls = c.get_name_path(Uuid::parse_str("0f6c2408-8e68-4c75-a14f-1c84b63868c6").unwrap());
-    println!("{:?}", cls);
-    assert!(false);
+    let cls = c.get_name_path(Uuid::parse_str("eda974ca-03b0-48a3-baf0-abec38ebc54c").unwrap());
+    assert!(cls.is_ok());
 }
