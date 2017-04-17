@@ -38,12 +38,19 @@ impl Connection {
     pub fn es(&mut self) -> &mut EsService {
         &mut self.es_client
     }
+
+    pub fn pg(&mut self) -> &mut PgService {
+        &mut self.pg_client
+    }
 }
 
 pub struct App {
     user: User,
     connection: Rc<RefCell<Connection>>,
 }
+
+// TODO: Remove this later ...
+use super::models::pg::models::Classification;
 
 impl App {
     pub fn new<C: Configuration>(config: C) -> App {
@@ -68,5 +75,14 @@ impl App {
 
     pub fn create<T: Entity>(&self) -> T {
         T::create(self)
+    }
+
+    // TODO: Remove this later ...
+    pub fn get_cls_by_id(&mut self, id: Uuid) -> Result<Classification,LoadError> {
+        super::models::pg::get_cls_by_id(self, id)
+    }
+
+    pub fn get_name_path(&mut self, id: Uuid) -> Result<Vec<String>, LoadError> {
+        super::models::pg::get_name_path(self, id)
     }
 }

@@ -1,35 +1,60 @@
 
 use uuid::Uuid;
-
-use diesel::prelude::*;
 use diesel::pg::PgConnection;
+use diesel::prelude::*;
+
+use std::ops::Deref;
 
 use LoadError;
-use models::pg::schema::*;
 
-trait PgDto {}
+pub trait PgDto {}
 
 struct PgClient {
-    connection: PgConnection,
+    url: String
 }
 
 impl PgClient {
     fn new(url: String) -> PgClient {
         PgClient {
-            connection: PgConnection::establish(&url).expect(&format!("Error connecting to {}",
-                                                                      url)),
+            url: url
         }
     }
 
-    fn load<T: PgDto>(&self, _id: Uuid) -> Result<T, LoadError> {
-        unimplemented!()
+    fn connect(&self) -> PgClientConnection {
+        PgClientConnection::new(&self.url)
     }
 }
 
-pub struct PgService;
+pub struct PgClientConnection {
+    client: PgConnection
+}
+
+impl PgClientConnection {
+    fn new(url: &str) -> Self {
+        PgClientConnection {
+            client: PgConnection::establish(&url).expect(&format!("Error connecting to {}", url)),
+        }
+    }
+}
+
+impl Deref for PgClientConnection {
+    type Target = PgConnection;
+
+    fn deref(&self) -> &Self::Target {
+        &self.client
+    }
+}
+
+pub struct PgService {
+    client: PgClient
+}
 
 impl PgService {
-    pub fn new(_url: String) -> PgService {
-        PgService
+    pub fn new(url: String) -> PgService {
+        PgService { client: PgClient::new(url) }
+    }
+
+    pub fn connect(&self) -> PgClientConnection {
+        self.client.connect()
     }
 }
