@@ -1,11 +1,8 @@
 
-use uuid::Uuid;
 use diesel::pg::PgConnection;
 use diesel::prelude::*;
 
 use std::ops::Deref;
-
-use LoadError;
 
 pub trait PgDto {}
 

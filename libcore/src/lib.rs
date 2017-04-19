@@ -23,12 +23,10 @@ mod models;
 
 use serde::{Serialize, Deserialize};
 
-use std::cell::RefCell;
 use std::fmt;
-use std::rc::Rc;
 
 pub use uuid::Uuid;
-pub use connection::{App, Connection};
+pub use connection::App;
 pub use models::record::Record;
 pub use configuration::Configuration;
 
@@ -41,7 +39,7 @@ pub trait Entity {
     ///
     /// Creates instance of Self initialized with connection
     ///
-    fn create(app: &App) -> Self;
+    fn create(app: App) -> Self;
 }
 
 pub trait ToDto {
@@ -53,11 +51,11 @@ pub trait ToDto {
 pub trait FromDto {
     type Dto: Serialize + Deserialize;
 
-    fn from_dto(dto: Self::Dto, conn: Rc<RefCell<Connection>>) -> Self;
+    fn from_dto(dto: Self::Dto, app: App) -> Self;
 }
 
 pub trait Load: Sized + FromDto + ToDto {
-    fn load(c: Rc<RefCell<Connection>>, id: Uuid) -> Result<Self, LoadError>;
+    fn load(c: App, id: Uuid) -> Result<Self, LoadError>;
 }
 
 pub enum Lazy<T: Load> {
@@ -66,10 +64,10 @@ pub enum Lazy<T: Load> {
 }
 
 impl<T: Load> Lazy<T> {
-    pub fn unwrap(&mut self, conn: Rc<RefCell<Connection>>) -> Result<&T, LoadError> {
+    pub fn unwrap(&mut self, app: App) -> Result<&T, LoadError> {
         match self {
             &mut Lazy::Guid(id) => {
-                *self = Lazy::Object(Box::new(T::load(conn, id).map_err(|_| LoadError::NotFound)?));
+                *self = Lazy::Object(Box::new(T::load(app, id).map_err(|_| LoadError::NotFound)?));
 
                 if let &mut Lazy::Object(ref o) = self {
                     Ok(o)

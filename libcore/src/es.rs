@@ -3,9 +3,6 @@ use serde::{Serialize, Deserialize};
 use chrono::naive::datetime::NaiveDateTime;
 use uuid::Uuid;
 
-use std::rc::Rc;
-use std::cell::RefCell;
-
 use rs_es::error;
 use rs_es::Client;
 use rs_es::query::*;
@@ -15,7 +12,7 @@ use rs_es::operations::delete::DeleteResult;
 use rs_es::operations::search::{SearchHitsResult, SearchResult};
 
 use FromDto;
-use connection::Connection;
+use connection::App;
 
 pub trait EsDto: Serialize + Deserialize {
     fn doc_type() -> &'static str;
@@ -150,13 +147,13 @@ impl EsService {
     }
 
     pub fn by_id<D: EsDto, T: FromDto<Dto = D>>(&mut self,
-                                                conn: Rc<RefCell<Connection>>,
+                                                app: App,
                                                 id: Uuid)
                                                 -> Result<T, EsError> {
         self.client
             .get::<D>(id)
             .map_err(|_| EsError::NotFound)
-            .and_then(|d| Ok(T::from_dto(d, conn)))
+            .and_then(|d| Ok(T::from_dto(d, app)))
     }
 
     pub fn index<T: EsDto>(&mut self, item: &T) -> Result<(), EsError> {

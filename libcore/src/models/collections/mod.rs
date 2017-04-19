@@ -2,11 +2,9 @@
 use uuid::Uuid;
 
 use std::collections::hash_map::{Keys, ValuesMut};
-use std::rc::Rc;
-use std::cell::RefCell;
 
 use {Lazy, LoadError, Load};
-use connection::Connection;
+use connection::App;
 
 pub mod fields;
 pub mod files;
@@ -43,14 +41,14 @@ pub struct IterMut<'a, T>
     where T: Load + 'a
 {
     inner: ValuesMut<'a, Uuid, Lazy<T>>,
-    connection: Rc<RefCell<Connection>>,
+    application: App,
 }
 
 impl<'a, T: Load + 'a> IterMut<'a, T> {
-    pub fn new(conn: Rc<RefCell<Connection>>, iter: ValuesMut<Uuid, Lazy<T>>) -> IterMut<T> {
+    pub fn new(app: App, iter: ValuesMut<Uuid, Lazy<T>>) -> IterMut<T> {
         IterMut {
             inner: iter,
-            connection: conn,
+            application: app,
         }
     }
 }
@@ -61,6 +59,6 @@ impl<'a, T: Load + 'a> Iterator for IterMut<'a, T> {
     fn next(&mut self) -> Option<Self::Item> {
         self.inner
             .next()
-            .map(|x| x.unwrap(self.connection.clone()))
+            .map(|x| x.unwrap(self.application.clone()))
     }
 }

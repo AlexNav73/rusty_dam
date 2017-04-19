@@ -1,31 +1,29 @@
 
 use uuid::Uuid;
 
-use std::cell::RefCell;
 use std::collections::HashMap;
-use std::rc::Rc;
 
 use Lazy;
 use models::collections::{EntityCollection, Ids, IterMut};
 use models::file::File;
-use connection::Connection;
+use connection::App;
 
 pub struct FileCollection {
     latest: Option<Uuid>,
     files: HashMap<Uuid, Lazy<File>>,
-    connection: Rc<RefCell<Connection>>,
+    application: App,
 }
 
 impl FileCollection {
-    pub fn new(conn: Rc<RefCell<Connection>>) -> FileCollection {
+    pub fn new(app: App) -> FileCollection {
         FileCollection {
             latest: None,
             files: HashMap::new(),
-            connection: conn,
+            application: app,
         }
     }
 
-    pub fn from_iter<'a, T>(iter: T, conn: Rc<RefCell<Connection>>) -> FileCollection
+    pub fn from_iter<'a, T>(iter: T, app: App) -> FileCollection
         where T: IntoIterator<Item = Uuid>
     {
         FileCollection {
@@ -33,13 +31,13 @@ impl FileCollection {
             files: iter.into_iter()
                 .map(|id| (id, Lazy::Guid(id)))
                 .collect(),
-            connection: conn,
+            application: app,
         }
     }
 
     // pub fn latest(&self) -> File {
     // self.files[&self.latest.unwrap()] // TODO: Error handling
-    // .unwrap(self.connection)
+    // .unwrap(self.application)
     // .expect("File not found")
     // }
 }
@@ -50,6 +48,6 @@ impl EntityCollection<File> for FileCollection {
     }
 
     fn iter_mut(&mut self) -> IterMut<File> {
-        IterMut::new(self.connection.clone(), self.files.values_mut())
+        IterMut::new(self.application.clone(), self.files.values_mut())
     }
 }

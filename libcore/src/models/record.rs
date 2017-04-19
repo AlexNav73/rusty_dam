@@ -2,12 +2,11 @@
 use uuid::Uuid;
 use chrono::{DateTime, UTC};
 
-use std::rc::Rc;
 use std::cell::RefCell;
 
 use {Load, LoadError, Entity, ToDto, FromDto};
 use es::SystemInfo;
-use connection::{App, Connection};
+use connection::App;
 
 use models::es::RecordDto;
 use models::collections::EntityCollection;
@@ -25,23 +24,22 @@ pub struct Record {
     modified_by: String,
     modified_on: DateTime<UTC>,
     is_new: bool,
-    connection: Rc<RefCell<Connection>>,
+    application: App
 }
 
 impl Record {
-    pub fn delete(self) -> Result<(), LoadError> {
-        self.connection
-            .borrow_mut()
+    pub fn delete(mut self) -> Result<(), LoadError> {
+        self.application
             .es()
             .delete::<RecordDto>(self.id)
             .map_err(|_| LoadError::NotFound)
     }
 
     pub fn save(&mut self) -> Result<(), LoadError> {
-        self.connection
-            .borrow_mut()
+        let dto = self.to_dto();
+        self.application
             .es()
-            .index(&self.to_dto())
+            .index(&dto)
             .map_err(|_| LoadError::NotFound)
     }
 }
@@ -51,18 +49,18 @@ impl Entity for Record {
         self.id
     }
 
-    fn create(app: &App) -> Record {
+    fn create(app: App) -> Record {
         Record {
             id: Uuid::new_v4(),
-            fields: RefCell::new(FieldCollection::new(app.connection())),
-            classifications: RefCell::new(ClassificationCollection::new(app.connection())),
-            files: RefCell::new(FileCollection::new(app.connection())),
+            fields: RefCell::new(FieldCollection::new(app.clone())),
+            classifications: RefCell::new(ClassificationCollection::new(app.clone())),
+            files: RefCell::new(FileCollection::new(app.clone())),
             created_on: UTC::now(),
             modified_on: UTC::now(),
             created_by: app.user().login().to_string(),
             modified_by: app.user().login().to_string(),
             is_new: true,
-            connection: app.connection(),
+            application: app.clone()
         }
     }
 }
@@ -104,33 +102,33 @@ fn to_dto_collection<T: Load, C: EntityCollection<T>>(collection: &mut C)
 impl FromDto for Record {
     type Dto = RecordDto;
 
-    fn from_dto(dto: Self::Dto, conn: Rc<RefCell<Connection>>) -> Record {
+    fn from_dto(dto: Self::Dto, app: App) -> Record {
         Record {
             id: dto.system.id,
             fields: RefCell::new(FieldCollection::from_iter(dto.fields.into_iter().map(|x| x.id),
-                                                            conn.clone())),
+                                                            app.clone())),
             classifications:
                 RefCell::new(ClassificationCollection::from_iter(dto.classifications
                                                                      .into_iter()
                                                                      .map(|x| x.id),
-                                                                 conn.clone())),
+                                                                 app.clone())),
             files: RefCell::new(FileCollection::from_iter(dto.files.into_iter().map(|x| x.id),
-                                                          conn.clone())),
+                                                          app.clone())),
             created_by: dto.system.created_by.to_string(),
             created_on: DateTime::from_utc(dto.system.created_on, UTC),
             modified_by: dto.system.modified_by.to_string(),
             modified_on: DateTime::from_utc(dto.system.modified_on, UTC),
             is_new: false,
-            connection: conn,
+            application: app,
         }
     }
 }
 
 impl Load for Record {
-    fn load(c: Rc<RefCell<Connection>>, id: Uuid) -> Result<Self, LoadError> {
-        c.borrow_mut()
-            .es()
-            .by_id(c.clone(), id)
+    fn load(mut app: App, id: Uuid) -> Result<Self, LoadError> {
+        let app_cloned = app.clone();
+        app.es()
+            .by_id(app_cloned, id)
             .map_err(|_| LoadError::NotFound)
     }
 }

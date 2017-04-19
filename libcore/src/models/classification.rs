@@ -1,31 +1,27 @@
 
 use uuid::Uuid;
 
-use std::cell::RefCell;
-use std::rc::Rc;
-
 use {Entity, ToDto, FromDto, Load, LoadError};
 use models::es::ClassificationDto;
-use connection::{App, Connection};
+use connection::App;
 
 pub struct Classification {
     id: Uuid,
     full_path: Option<String>,
-    connection: Rc<RefCell<Connection>>,
+    application: App
 }
 
 impl Classification {
     pub fn save(&mut self) -> Result<(), LoadError> {
-        self.connection
-            .borrow_mut()
+        let dto = self.to_dto();
+        self.application
             .es()
-            .index(&self.to_dto())
+            .index(&dto)
             .map_err(|_| LoadError::NotFound)
     }
 
-    fn delete(self) -> Result<(), LoadError> {
-        self.connection
-            .borrow_mut()
+    fn delete(mut self) -> Result<(), LoadError> {
+        self.application
             .es()
             .delete::<ClassificationDto>(self.id)
             .map_err(|_| LoadError::NotFound)
@@ -40,11 +36,11 @@ impl Classification {
 }
 
 impl Entity for Classification {
-    fn create(app: &App) -> Classification {
+    fn create(app: App) -> Classification {
         Classification {
             id: Uuid::new_v4(),
             full_path: None,
-            connection: app.connection(),
+            application: app
         }
     }
 
@@ -70,17 +66,17 @@ impl ToDto for Classification {
 impl FromDto for Classification {
     type Dto = ClassificationDto;
 
-    fn from_dto(dto: Self::Dto, conn: Rc<RefCell<Connection>>) -> Classification {
+    fn from_dto(dto: Self::Dto, app: App) -> Classification {
         Classification {
             id: dto.id,
             full_path: Some(dto.full_path),
-            connection: conn,
+            application: app,
         }
     }
 }
 
 impl Load for Classification {
-    fn load(_c: Rc<RefCell<Connection>>, _id: Uuid) -> Result<Self, LoadError> {
+    fn load(_app: App, _id: Uuid) -> Result<Self, LoadError> {
         unimplemented!()
     }
 }

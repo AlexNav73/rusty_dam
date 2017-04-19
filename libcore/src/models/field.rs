@@ -1,18 +1,15 @@
 
 use uuid::Uuid;
 
-use std::rc::Rc;
-use std::cell::RefCell;
-
 use {Entity, ToDto, FromDto, Load, LoadError};
 use models::es::FieldDto;
-use connection::{App, Connection};
+use connection::App;
 
 pub struct Field {
     id: Uuid,
     name: String,
     value: FieldValue,
-    connection: Rc<RefCell<Connection>>,
+    application: App
 }
 
 impl Field {
@@ -39,12 +36,12 @@ impl Entity for Field {
         self.id
     }
 
-    fn create(app: &App) -> Field {
+    fn create(app: App) -> Field {
         Field {
             id: Uuid::new_v4(),
             name: "".into(),
             value: FieldValue::Empty,
-            connection: app.connection(),
+            application: app
         }
     }
 }
@@ -68,18 +65,18 @@ impl ToDto for Field {
 impl FromDto for Field {
     type Dto = FieldDto;
 
-    fn from_dto(dto: Self::Dto, conn: Rc<RefCell<Connection>>) -> Field {
+    fn from_dto(dto: Self::Dto, app: App) -> Field {
         Field {
             id: dto.id,
             name: dto.name,
             value: dto.value,
-            connection: conn,
+            application: app,
         }
     }
 }
 
 impl Load for Field {
-    fn load(_c: Rc<RefCell<Connection>>, _id: Uuid) -> Result<Self, LoadError> {
+    fn load(_app: App, _id: Uuid) -> Result<Self, LoadError> {
         unimplemented!()
     }
 }
