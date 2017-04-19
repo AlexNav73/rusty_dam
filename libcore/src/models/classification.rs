@@ -8,7 +8,7 @@ use connection::App;
 pub struct Classification {
     id: Uuid,
     full_path: Option<String>,
-    application: App
+    application: App,
 }
 
 impl Classification {
@@ -40,7 +40,7 @@ impl Entity for Classification {
         Classification {
             id: Uuid::new_v4(),
             full_path: None,
-            application: app
+            application: app,
         }
     }
 

@@ -15,7 +15,7 @@ pub enum FileError {
 pub struct File {
     id: Uuid,
     path: Option<String>,
-    application: App
+    application: App,
 }
 
 impl File {
@@ -39,7 +39,7 @@ impl Entity for File {
         File {
             id: Uuid::new_v4(),
             path: None,
-            application: app
+            application: app,
         }
     }
 }

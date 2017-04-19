@@ -7,14 +7,12 @@ use std::ops::Deref;
 pub trait PgDto {}
 
 struct PgClient {
-    url: String
+    url: String,
 }
 
 impl PgClient {
     fn new(url: String) -> PgClient {
-        PgClient {
-            url: url
-        }
+        PgClient { url: url }
     }
 
     fn connect(&self) -> PgClientConnection {
@@ -23,7 +21,7 @@ impl PgClient {
 }
 
 pub struct PgClientConnection {
-    client: PgConnection
+    client: PgConnection,
 }
 
 impl PgClientConnection {
@@ -43,7 +41,7 @@ impl Deref for PgClientConnection {
 }
 
 pub struct PgService {
-    client: PgClient
+    client: PgClient,
 }
 
 impl PgService {

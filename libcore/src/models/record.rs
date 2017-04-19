@@ -24,7 +24,7 @@ pub struct Record {
     modified_by: String,
     modified_on: DateTime<UTC>,
     is_new: bool,
-    application: App
+    application: App,
 }
 
 impl Record {
@@ -60,7 +60,7 @@ impl Entity for Record {
             created_by: app.user().login().to_string(),
             modified_by: app.user().login().to_string(),
             is_new: true,
-            application: app.clone()
+            application: app.clone(),
         }
     }
 }
@@ -70,7 +70,7 @@ impl ToDto for Record {
 
     fn to_dto(&self) -> RecordDto {
         let classifications = to_dto_collection(&mut *self.classifications.borrow_mut());
-        let files = to_dto_collection(&mut *self.files.borrow_mut()); 
+        let files = to_dto_collection(&mut *self.files.borrow_mut());
 
         if classifications.is_empty() { panic!("Record must be assign at least one classification"); }
         if files.is_empty() { panic!("Record must contains at least one file"); }

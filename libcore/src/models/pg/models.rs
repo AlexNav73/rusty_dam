@@ -5,6 +5,5 @@ use uuid::Uuid;
 pub struct Classification {
     id: Uuid,
     parent_id: Option<Uuid>,
-    name: String
+    name: String,
 }
-

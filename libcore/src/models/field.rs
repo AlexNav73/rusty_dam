@@ -9,7 +9,7 @@ pub struct Field {
     id: Uuid,
     name: String,
     value: FieldValue,
-    application: App
+    application: App,
 }
 
 impl Field {
@@ -41,7 +41,7 @@ impl Entity for Field {
             id: Uuid::new_v4(),
             name: "".into(),
             value: FieldValue::Empty,
-            application: app
+            application: app,
         }
     }
 }

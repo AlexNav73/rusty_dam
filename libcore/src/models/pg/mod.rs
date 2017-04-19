@@ -30,4 +30,3 @@ pub fn get_cls_by_id(mut app: App, cls_id: Uuid) -> Result<Classification, LoadE
         .first::<Classification>(&*pg_conn)
         .map_err(|_| LoadError::NotFound)
 }
-
