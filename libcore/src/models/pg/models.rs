@@ -3,7 +3,7 @@ use uuid::Uuid;
 
 #[derive(Debug, Queryable)]
 pub struct Classification {
-    id: Uuid,
-    parent_id: Option<Uuid>,
-    name: String,
+    pub id: Uuid,
+    pub parent_id: Option<Uuid>,
+    pub name: String,
 }

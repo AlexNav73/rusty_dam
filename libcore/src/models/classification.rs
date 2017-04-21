@@ -15,19 +15,21 @@ pub struct Classification {
 
 impl Classification {
     pub fn save(&mut self) -> Result<(), LoadError> {
-        let dto = self.to_dto();
-        self.application
-            .es()
-            .index(&dto)
-            .map_err(|_| LoadError::NotFound)
+        unimplemented!()
+        //let dto = self.to_dto();
+        //self.application
+            //.es()
+            //.index(&dto)
+            //.map_err(|_| LoadError::NotFound)
     }
 
     // TODO: Delete classification from PostgreSQL too ...
-    fn delete(mut self) -> Result<(), LoadError> {
-        self.application
-            .es()
-            .delete::<ClassificationDto>(self.id)
-            .map_err(|_| LoadError::NotFound)
+    fn delete(self) -> Result<(), LoadError> {
+        unimplemented!()
+        //self.application
+            //.es()
+            //.delete::<ClassificationDto>(self.id)
+            //.map_err(|_| LoadError::NotFound)
     }
 
     pub fn new<N: Into<ClassificationNamePath>>(app: App, name_path: N) -> Self {
@@ -72,7 +74,21 @@ impl FromDto for Classification {
 }
 
 impl Load for Classification {
-    fn load(_app: App, _id: Uuid) -> Result<Self, LoadError> {
-        unimplemented!()
+    fn load(mut app: App, cls_id: Uuid) -> Result<Self, LoadError> {
+        use diesel::prelude::*;
+        use models::pg::schema::classifications::dsl::*;
+        use models::pg::models::*;
+
+        let pg_conn = app.pg().connect();
+        classifications
+            .filter(id.eq(cls_id))
+            .first::<Classification>(&*pg_conn)
+            .map_err(|_| LoadError::NotFound)
+            .and_then(|c| Ok(self::Classification {
+                id: c.id,
+                parent_id: c.parent_id,
+                name_path: ClassificationNamePath::from_uuid(&mut app, c.id)?,
+                application: app
+            }))
     }
 }

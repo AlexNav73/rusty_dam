@@ -47,8 +47,6 @@ impl Connection {
 #[derive(Clone)]
 pub struct App(Rc<RefCell<Connection>>);
 
-use super::models::pg::models::Classification;
-
 impl App {
     pub fn new<C: Configuration>(config: C) -> App {
         App(Rc::new(RefCell::new(Connection::new(config))))
@@ -76,9 +74,5 @@ impl App {
 
     pub fn create<T: Create>(&self) -> T {
         T::create(self.clone())
-    }
-
-    pub fn get_cls_by_id(&mut self, id: Uuid) -> Result<Classification, LoadError> {
-        super::models::pg::get_cls_by_id(self.clone(), id)
     }
 }

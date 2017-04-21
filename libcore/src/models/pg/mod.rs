@@ -14,15 +14,12 @@ use LoadError;
 pub mod schema;
 pub mod models;
 
-use self::schema::classifications::dsl::*;
-use self::models::*;
-
 pub struct ClassificationNamePath {
     path: Vec<String>,
 }
 
 impl ClassificationNamePath {
-    pub fn form_uuid(app: &mut App, cid: Uuid) -> Result<Self, LoadError> {
+    pub fn from_uuid(app: &mut App, cid: Uuid) -> Result<Self, LoadError> {
         sql_function!(get_classification_name_path,
                       get_classification_name_path_t,
                       (cls_id: sql_types::Uuid) -> Array<Text>);
@@ -49,12 +46,4 @@ impl FromStr for ClassificationNamePath {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(ClassificationNamePath { path: s.split_terminator('/').map(|n| n.into()).collect() })
     }
-}
-
-pub fn get_cls_by_id(mut app: App, cls_id: Uuid) -> Result<Classification, LoadError> {
-    let pg_conn = app.pg().connect();
-    classifications
-        .filter(id.eq(cls_id))
-        .first::<Classification>(&*pg_conn)
-        .map_err(|_| LoadError::NotFound)
 }
