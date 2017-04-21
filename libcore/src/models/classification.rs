@@ -72,7 +72,7 @@ impl Classification {
         let pg_conn = self.application.pg().connect();
 
         match name_path.is_valid(pg_conn) {
-            Ok(r) if r == true => {
+            Ok(r) if r == true && self.name_path != name_path => {
                 self.name_path = name_path;
                 self.is_dirty = true;
             }
