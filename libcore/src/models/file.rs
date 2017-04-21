@@ -23,12 +23,17 @@ impl File {
         File {
             id: Uuid::new_v4(),
             path: path.into(),
-            application: app
+            application: app,
         }
     }
 
     pub fn file_stem(&self) -> &str {
-        self.path.as_path().file_stem().unwrap().to_str().unwrap()
+        self.path
+            .as_path()
+            .file_stem()
+            .unwrap()
+            .to_str()
+            .unwrap()
     }
 }
 
@@ -44,7 +49,10 @@ impl ToDto for File {
     fn to_dto(&self) -> FileDto {
         FileDto {
             id: self.id,
-            full_file_path: self.path.to_str().and_then(|s| Some(s.to_owned())).unwrap()
+            full_file_path: self.path
+                .to_str()
+                .and_then(|s| Some(s.to_owned()))
+                .unwrap(),
         }
     }
 }

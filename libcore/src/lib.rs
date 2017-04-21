@@ -15,9 +15,10 @@ extern crate uuid;
 extern crate rs_es;
 extern crate chrono;
 
-mod configuration;
 mod connection;
+mod configuration;
 mod es;
+#[macro_use]
 mod pg;
 mod models;
 

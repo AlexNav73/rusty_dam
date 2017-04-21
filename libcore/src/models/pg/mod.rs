@@ -7,8 +7,8 @@ use diesel::pg::types::sql_types;
 use std::str::FromStr;
 use std::string::ParseError;
 
+use connection::*;
 use pg::PgDto;
-use connection::App;
 use LoadError;
 
 pub mod schema;
@@ -17,19 +17,19 @@ pub mod models;
 use self::schema::classifications::dsl::*;
 use self::models::*;
 
-sql_function!(get_classification_name_path, get_classification_name_path_t, (cls_id: sql_types::Uuid) -> Array<Text>);
-
 pub struct ClassificationNamePath {
-    path: Vec<String>
+    path: Vec<String>,
 }
 
 impl ClassificationNamePath {
     pub fn form_uuid(app: &mut App, cid: Uuid) -> Result<Self, LoadError> {
+        sql_function!(get_classification_name_path,
+                      get_classification_name_path_t,
+                      (cls_id: sql_types::Uuid) -> Array<Text>);
+
         let pg_conn = app.pg().connect();
-        ::diesel::select(get_classification_name_path(cid))
-            .first::<Vec<String>>(&*pg_conn)
+        exec_fn!(get_classification_name_path(cid), pg_conn)
             .and_then(|p| Ok(ClassificationNamePath { path: p }))
-            .map_err(|_| LoadError::NotFound)
     }
 }
 
@@ -47,9 +47,7 @@ impl FromStr for ClassificationNamePath {
     type Err = ParseError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(ClassificationNamePath {
-            path: s.split_terminator('/').map(|n| n.into()).collect()
-        })
+        Ok(ClassificationNamePath { path: s.split_terminator('/').map(|n| n.into()).collect() })
     }
 }
 

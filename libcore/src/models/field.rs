@@ -18,7 +18,7 @@ impl Field {
             id: Uuid::new_v4(),
             name: name.into(),
             value: FieldValue::Empty,
-            application: app
+            application: app,
         }
     }
 

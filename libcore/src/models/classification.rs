@@ -8,6 +8,7 @@ use connection::App;
 
 pub struct Classification {
     id: Uuid,
+    parent_id: Option<Uuid>,
     name_path: ClassificationNamePath,
     application: App,
 }
@@ -21,7 +22,7 @@ impl Classification {
             .map_err(|_| LoadError::NotFound)
     }
 
-    // TODO: Delete classification from PostgreSQL too ... 
+    // TODO: Delete classification from PostgreSQL too ...
     fn delete(mut self) -> Result<(), LoadError> {
         self.application
             .es()
@@ -32,8 +33,9 @@ impl Classification {
     pub fn new<N: Into<ClassificationNamePath>>(app: App, name_path: N) -> Self {
         Classification {
             id: Uuid::new_v4(),
+            parent_id: None,
             name_path: name_path.into(),
-            application: app
+            application: app,
         }
     }
 }
@@ -50,7 +52,8 @@ impl ToDto for Classification {
     fn to_dto(&self) -> ClassificationDto {
         ClassificationDto {
             id: self.id,
-            name_path: self.name_path.to_string()
+            parent_id: self.parent_id,
+            name_path: self.name_path.to_string(),
         }
     }
 }
@@ -61,6 +64,7 @@ impl FromDto for Classification {
     fn from_dto(dto: Self::Dto, app: App) -> Classification {
         Classification {
             id: dto.id,
+            parent_id: dto.parent_id,
             name_path: dto.name_path.parse().unwrap(),
             application: app,
         }

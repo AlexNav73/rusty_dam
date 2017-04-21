@@ -74,8 +74,12 @@ impl ToDto for Record {
         let classifications = to_dto_collection(&mut *self.classifications.borrow_mut());
         let files = to_dto_collection(&mut *self.files.borrow_mut());
 
-        if classifications.is_empty() { panic!("Record must be assign at least one classification"); }
-        if files.is_empty() { panic!("Record must contains at least one file"); }
+        if classifications.is_empty() {
+            panic!("Record must be assign at least one classification");
+        }
+        if files.is_empty() {
+            panic!("Record must contains at least one file");
+        }
 
         RecordDto {
             fields: to_dto_collection(&mut *self.fields.borrow_mut()),
