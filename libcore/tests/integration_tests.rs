@@ -56,7 +56,8 @@ fn create_record() {
 //#[should_panic]
 fn load_cls() {
     let mut c = App::new(Config);
-    let cls = c.get::<Classification>(Uuid::parse_str("f6e09bf2-4495-4047-8022-5a1317e67506").unwrap());
+    let cls = c.get::<Classification>(Uuid::parse_str("f6e09bf2-4495-4047-8022-5a1317e67506")
+                                          .unwrap());
 
     println!("Classification: {:?}", cls);
 
@@ -67,7 +68,8 @@ fn load_cls() {
 //#[should_panic]
 fn load_classification_path() {
     let mut c = App::new(Config);
-    let cls = c.get::<Classification>(Uuid::parse_str("eda974ca-03b0-48a3-baf0-abec38ebc54c").unwrap());
+    let cls = c.get::<Classification>(Uuid::parse_str("eda974ca-03b0-48a3-baf0-abec38ebc54c")
+                                          .unwrap());
 
     println!("Classification name path: {:?}", cls);
 

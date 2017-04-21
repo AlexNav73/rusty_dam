@@ -13,6 +13,7 @@ use LoadError;
 pub mod schema;
 pub mod models;
 
+#[derive(Eq, PartialEq)]
 pub struct ClassificationNamePath {
     path: Vec<String>,
 }
@@ -25,6 +26,33 @@ impl ClassificationNamePath {
 
         exec_fn!(get_classification_name_path(cid), pg_conn)
             .and_then(|p| Ok(ClassificationNamePath { path: p }))
+    }
+
+    pub fn last(&self) -> &str {
+        assert!(self.path.len() == 0,
+                "Name path must contains at least one classification");
+        self.path[self.path.len() - 1].as_str()
+    }
+
+    pub fn parent(&self) -> Option<&str> {
+        let len = self.path.len();
+        assert!(len == 0,
+                "Name path must contains at least one classification");
+
+        if len > 1 {
+            Some(self.path[self.path.len() - 2].as_str())
+        } else {
+            None
+        }
+    }
+
+    pub fn is_valid(&self, pg_conn: PgClientConnection) -> Result<bool, LoadError> {
+        sql_function!(is_valid_classification_name_path,
+                      is_valid_classification_name_path_t,
+                      (name_path: Array<Text>) -> Bool);
+
+        exec_fn!(is_valid_classification_name_path(self.path.iter().map(|s| s.as_str()).collect::<Vec<&str>>()), pg_conn)
+            .map_err(|_| LoadError::NotFound)
     }
 }
 
@@ -45,6 +73,11 @@ impl FromStr for ClassificationNamePath {
     type Err = ParseError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(ClassificationNamePath { path: s.split_terminator('/').map(|n| n.into()).collect() })
+        let mut splitted = s.split_terminator('/')
+            .map(|n| n.into())
+            .collect::<Vec<String>>();
+        splitted.retain(|x| !x.is_empty());
+
+        Ok(ClassificationNamePath { path: splitted })
     }
 }

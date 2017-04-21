@@ -74,12 +74,9 @@ impl ToDto for Record {
         let classifications = to_dto_collection(&mut *self.classifications.borrow_mut());
         let files = to_dto_collection(&mut *self.files.borrow_mut());
 
-        if classifications.is_empty() {
-            panic!("Record must be assign at least one classification");
-        }
-        if files.is_empty() {
-            panic!("Record must contains at least one file");
-        }
+        assert!(classifications.is_empty(),
+                "Record must be assign at least one classification");
+        assert!(files.is_empty(), "Record must contains at least one file");
 
         RecordDto {
             fields: to_dto_collection(&mut *self.fields.borrow_mut()),
@@ -96,8 +93,10 @@ impl ToDto for Record {
     }
 }
 
-fn to_dto_collection<T: Load, C: EntityCollection<T>>(collection: &mut C)
-                                                      -> Vec<<T as ToDto>::Dto> {
+fn to_dto_collection<T, C>(collection: &mut C) -> Vec<<T as ToDto>::Dto>
+    where C: EntityCollection<T>,
+          T: Load
+{
     collection
         .iter_mut()
         .filter(|x| x.is_ok())
