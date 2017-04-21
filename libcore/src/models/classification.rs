@@ -89,7 +89,7 @@ impl Load for Classification {
             .and_then(|c| Ok(self::Classification {
                 id: c.id,
                 parent_id: c.parent_id,
-                name_path: ClassificationNamePath::from_uuid(&mut app, c.id)?,
+                name_path: ClassificationNamePath::from_uuid(pg_conn, c.id)?,
                 application: app
             }))
     }

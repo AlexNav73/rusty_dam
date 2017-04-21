@@ -4,8 +4,6 @@ use diesel::prelude::*;
 
 use std::ops::Deref;
 
-pub trait PgDto {}
-
 struct PgClient {
     url: String,
 }
@@ -60,21 +58,3 @@ impl PgService {
         self.client.connect()
     }
 }
-
-
-
-//note: the method `first` exists but the following trait bounds were not satisfied:
-//`_ : diesel::query_builder::QueryFragment<_>`,
-//`_ : diesel::query_builder::QueryId`,
-//`_ : diesel::query_builder::QueryFragment<_>`,
-//`_ : diesel::query_builder::QueryId`,
-//`&mut diesel::query_builder::SelectStatement<(),
-//diesel::query_builder::select_clause::SelectClause<F>> : diesel::query_builder::AsQuery`,
-//`_ : diesel::query_builder::QueryFragment<_>`,
-//`_ : diesel::query_builder::QueryId`,
-//`&mut diesel::query_builder::SelectStatement<(),
-//diesel::query_builder::select_clause::SelectClause<F>> : diesel::query_builder::Query`,
-//`&mut diesel::query_builder::SelectStatement<(),
-//diesel::query_builder::select_clause::SelectClause<F>> : diesel::query_builder::Query`,
-//`&mut diesel::query_builder::SelectStatement<(),
-//diesel::query_builder::select_clause::SelectClause<F>> : diesel::query_builder::Query`
