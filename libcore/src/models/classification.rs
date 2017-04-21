@@ -32,20 +32,19 @@ impl Classification {
 
     fn update(&mut self) -> Result<(), LoadError> {
         let pg_conn = self.application.pg().connect();
-        let parent = self.name_path.parent()
+        let parent = self.name_path
+            .parent()
             .and_then(|p| {
-                classifications.filter(name.eq(p))
-                    .get_result::<(Uuid, Option<Uuid>, String)>(&*pg_conn)
-                    .and_then(|row| Ok(row.0))
-                    .ok()
-            });
+                          classifications
+                              .filter(name.eq(p))
+                              .get_result::<(Uuid, Option<Uuid>, String)>(&*pg_conn)
+                              .and_then(|row| Ok(row.0))
+                              .ok()
+                      });
 
         self.parent_id = parent;
         ::diesel::update(classifications.filter(id.eq(self.id)))
-            .set((
-                    parent_id.eq(parent),
-                    name.eq(self.name_path.last())
-                ))
+            .set((parent_id.eq(parent), name.eq(self.name_path.last())))
             .execute(&*pg_conn)
             .map(|_| ())
             .map_err(|_| LoadError::NotFound)
@@ -76,8 +75,8 @@ impl Classification {
             Ok(r) if r == true => {
                 self.name_path = name_path;
                 self.is_dirty = true;
-            },
-            _ => ()
+            }
+            _ => (),
         }
     }
 

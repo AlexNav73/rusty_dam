@@ -51,8 +51,12 @@ impl ClassificationNamePath {
                       is_valid_classification_name_path_t,
                       (name_path: Array<Text>) -> Bool);
 
-        exec_fn!(is_valid_classification_name_path(self.path.iter().map(|s| s.as_str()).collect::<Vec<&str>>()), pg_conn)
-            .map_err(|_| LoadError::NotFound)
+        exec_fn!(is_valid_classification_name_path(self.path
+                                                       .iter()
+                                                       .map(|s| s.as_str())
+                                                       .collect::<Vec<&str>>()),
+                 pg_conn)
+                .map_err(|_| LoadError::NotFound)
     }
 }
 
