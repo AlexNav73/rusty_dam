@@ -1,6 +1,8 @@
 
 use uuid::Uuid;
 
+use std::fmt;
+
 use {Entity, ToDto, FromDto, Load, LoadError};
 use models::es::ClassificationDto;
 use models::pg::ClassificationNamePath;
@@ -92,3 +94,14 @@ impl Load for Classification {
             }))
     }
 }
+
+impl fmt::Debug for Classification {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        f.debug_struct("Classification")
+            .field("id", &self.id)
+            .field("parent_id", &self.parent_id)
+            .field("name_path", &self.name_path.to_string())
+            .finish()
+    }
+}
+

@@ -35,7 +35,10 @@ impl ToString for ClassificationNamePath {
         let total_cls_lens = self.path.iter().map(|c| c.len()).sum::<usize>();
         let total_sep = self.path.len();
         let mut res = String::with_capacity(total_cls_lens + total_sep - 1);
-        res.extend(self.path.iter().map(|x| x.as_str()));
+        for cls in self.path.iter() {
+            res.push_str("/");
+            res.push_str(cls);
+        }
         res
     }
 }

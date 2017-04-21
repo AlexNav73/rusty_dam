@@ -29,6 +29,7 @@ use std::fmt;
 pub use uuid::Uuid;
 pub use connection::App;
 pub use models::record::Record;
+pub use models::classification::Classification;
 pub use configuration::Configuration;
 
 pub trait Entity {
