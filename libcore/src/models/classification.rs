@@ -3,11 +3,12 @@ use uuid::Uuid;
 
 use {Entity, ToDto, FromDto, Load, LoadError};
 use models::es::ClassificationDto;
+use models::pg::ClassificationNamePath;
 use connection::App;
 
 pub struct Classification {
     id: Uuid,
-    full_path: Option<String>,
+    name_path: ClassificationNamePath,
     application: App,
 }
 
@@ -20,30 +21,24 @@ impl Classification {
             .map_err(|_| LoadError::NotFound)
     }
 
+    // TODO: Delete classification from PostgreSQL too ... 
     fn delete(mut self) -> Result<(), LoadError> {
         self.application
             .es()
             .delete::<ClassificationDto>(self.id)
             .map_err(|_| LoadError::NotFound)
     }
-}
 
-impl Classification {
-    // TODO: Make name_path as ClassificationPath object
-    fn set_name_path(&mut self, name_path: String) {
-        self.full_path = Some(name_path)
+    pub fn new<N: Into<ClassificationNamePath>>(app: App, name_path: N) -> Self {
+        Classification {
+            id: Uuid::new_v4(),
+            name_path: name_path.into(),
+            application: app
+        }
     }
 }
 
 impl Entity for Classification {
-    fn create(app: App) -> Classification {
-        Classification {
-            id: Uuid::new_v4(),
-            full_path: None,
-            application: app,
-        }
-    }
-
     fn id(&self) -> Uuid {
         self.id
     }
@@ -55,10 +50,7 @@ impl ToDto for Classification {
     fn to_dto(&self) -> ClassificationDto {
         ClassificationDto {
             id: self.id,
-            full_path: match self.full_path {
-                None => panic!("Classification mast have path"),
-                Some(ref s) => s.to_string(),
-            },
+            name_path: self.name_path.to_string()
         }
     }
 }
@@ -69,7 +61,7 @@ impl FromDto for Classification {
     fn from_dto(dto: Self::Dto, app: App) -> Classification {
         Classification {
             id: dto.id,
-            full_path: Some(dto.full_path),
+            name_path: dto.name_path.parse().unwrap(),
             application: app,
         }
     }

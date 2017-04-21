@@ -13,12 +13,17 @@ pub struct Field {
 }
 
 impl Field {
-    fn name(&self) -> &str {
-        self.name.as_str()
+    pub fn new<S: Into<String>>(app: App, name: S) -> Self {
+        Field {
+            id: Uuid::new_v4(),
+            name: name.into(),
+            value: FieldValue::Empty,
+            application: app
+        }
     }
 
-    fn set_name<S: Into<String>>(&mut self, name: S) {
-        self.name = name.into();
+    fn name(&self) -> &str {
+        self.name.as_str()
     }
 
     // TODO: Proper impl ...
@@ -34,15 +39,6 @@ impl Field {
 impl Entity for Field {
     fn id(&self) -> Uuid {
         self.id
-    }
-
-    fn create(app: App) -> Field {
-        Field {
-            id: Uuid::new_v4(),
-            name: "".into(),
-            value: FieldValue::Empty,
-            application: app,
-        }
     }
 }
 

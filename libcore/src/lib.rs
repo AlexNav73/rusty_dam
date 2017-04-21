@@ -35,11 +35,6 @@ pub trait Entity {
     /// Unique identifier of entity
     ///
     fn id(&self) -> Uuid;
-
-    ///
-    /// Creates instance of Self initialized with connection
-    ///
-    fn create(app: App) -> Self;
 }
 
 pub trait ToDto {
@@ -56,6 +51,10 @@ pub trait FromDto {
 
 pub trait Load: Sized + FromDto + ToDto {
     fn load(c: App, id: Uuid) -> Result<Self, LoadError>;
+}
+
+pub trait Create: FromDto + ToDto {
+    fn create(app: App) -> Self;
 }
 
 pub enum Lazy<T: Load> {

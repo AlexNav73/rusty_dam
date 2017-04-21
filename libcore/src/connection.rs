@@ -6,7 +6,7 @@ use std::rc::Rc;
 use std::cell::{RefCell, RefMut, Ref};
 use std::env;
 
-use {Entity, Load, LoadError};
+use {Create, Load, LoadError};
 use es::EsService;
 use pg::PgService;
 use models::user::User;
@@ -74,15 +74,11 @@ impl App {
         T::load(self.clone(), id)
     }
 
-    pub fn create<T: Entity>(&self) -> T {
+    pub fn create<T: Create>(&self) -> T {
         T::create(self.clone())
     }
 
     pub fn get_cls_by_id(&mut self, id: Uuid) -> Result<Classification, LoadError> {
         super::models::pg::get_cls_by_id(self.clone(), id)
-    }
-
-    pub fn get_name_path(&mut self, id: Uuid) -> Result<Vec<String>, LoadError> {
-        super::models::pg::get_name_path(self.clone(), id)
     }
 }

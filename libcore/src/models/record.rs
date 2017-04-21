@@ -4,7 +4,7 @@ use chrono::{DateTime, UTC};
 
 use std::cell::RefCell;
 
-use {Load, LoadError, Entity, ToDto, FromDto};
+use {Create, Load, LoadError, Entity, ToDto, FromDto};
 use es::SystemInfo;
 use connection::App;
 
@@ -48,7 +48,9 @@ impl Entity for Record {
     fn id(&self) -> Uuid {
         self.id
     }
+}
 
+impl Create for Record {
     fn create(app: App) -> Record {
         Record {
             id: Uuid::new_v4(),

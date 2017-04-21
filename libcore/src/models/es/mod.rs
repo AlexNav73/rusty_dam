@@ -7,7 +7,7 @@ use models::field::FieldValue;
 #[derive(Serialize, Deserialize)]
 pub struct ClassificationDto {
     pub id: Uuid,
-    pub full_path: String,
+    pub name_path: String,
 }
 
 impl EsDto for ClassificationDto {
@@ -30,6 +30,7 @@ pub struct FieldDto {
 #[derive(Serialize, Deserialize)]
 pub struct FileDto {
     pub id: Uuid,
+    pub full_file_path: String
 }
 
 #[derive(Serialize, Deserialize)]
