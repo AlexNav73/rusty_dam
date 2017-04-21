@@ -15,7 +15,7 @@ impl Configuration for Config {
     }
 
     fn es_url(&self) -> String {
-        "http:192.168.99.100:32769/".into()
+        "http://192.168.99.100:32769/".into()
     }
 }
 
