@@ -11,16 +11,6 @@ pub struct ClassificationDto {
     pub name_path: String,
 }
 
-impl EsDto for ClassificationDto {
-    fn doc_type() -> &'static str {
-        "classifications"
-    }
-
-    fn id(&self) -> Uuid {
-        self.id
-    }
-}
-
 #[derive(Serialize, Deserialize)]
 pub struct FieldDto {
     pub id: Uuid,

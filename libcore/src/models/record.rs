@@ -9,6 +9,9 @@ use es::SystemInfo;
 use connection::App;
 
 use models::es::RecordDto;
+use models::file::File;
+use models::field::Field;
+use models::classification::Classification;
 use models::collections::EntityCollection;
 use models::collections::fields::FieldCollection;
 use models::collections::files::FileCollection;
@@ -98,6 +101,7 @@ fn to_dto_collection<T, C>(collection: &mut C) -> Vec<<T as ToDto>::Dto>
           T: Load
 {
     collection
+        // TODO: Load all a once ... 
         .iter_mut()
         .filter(|x| x.is_ok())
         .map(|x| x.unwrap().to_dto())
@@ -110,14 +114,14 @@ impl FromDto for Record {
     fn from_dto(dto: Self::Dto, app: App) -> Record {
         Record {
             id: dto.system.id,
-            fields: RefCell::new(FieldCollection::from_iter(dto.fields.into_iter().map(|x| x.id),
+            fields: RefCell::new(FieldCollection::from_iter(dto.fields.into_iter().map(|x| Field::from_dto(x, app.clone())),
                                                             app.clone())),
             classifications:
                 RefCell::new(ClassificationCollection::from_iter(dto.classifications
                                                                      .into_iter()
-                                                                     .map(|x| x.id),
+                                                                     .map(|x| Classification::from_dto(x, app.clone())),
                                                                  app.clone())),
-            files: RefCell::new(FileCollection::from_iter(dto.files.into_iter().map(|x| x.id),
+            files: RefCell::new(FileCollection::from_iter(dto.files.into_iter().map(|x| File::from_dto(x, app.clone())),
                                                           app.clone())),
             created_by: dto.system.created_by.to_string(),
             created_on: DateTime::from_utc(dto.system.created_on, UTC),
