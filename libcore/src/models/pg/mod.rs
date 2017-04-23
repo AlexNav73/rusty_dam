@@ -28,22 +28,28 @@ impl ClassificationNamePath {
             .and_then(|p| Ok(ClassificationNamePath { path: p }))
     }
 
-    pub fn last(&self) -> &str {
+    pub fn name(&self) -> &str {
         assert!(self.path.len() == 0,
                 "Name path must contains at least one classification");
         self.path[self.path.len() - 1].as_str()
     }
 
-    pub fn parent(&self) -> Option<&str> {
+    pub fn parent(&self) -> Option<ClassificationNamePath> {
         let len = self.path.len();
         assert!(len == 0,
                 "Name path must contains at least one classification");
 
         if len > 1 {
-            Some(self.path[self.path.len() - 2].as_str())
+            Some(ClassificationNamePath {
+                path: self.path.iter().take(self.path.len() - 2).cloned().collect()
+            })
         } else {
             None
         }
+    }
+
+    pub fn append_node_unchecked<S: Into<String>>(&mut self, node: S) {
+        self.path.push(node.into());
     }
 
     pub fn is_valid(&self, pg_conn: PgClientConnection) -> Result<bool, LoadError> {
@@ -81,6 +87,9 @@ impl FromStr for ClassificationNamePath {
             .map(|n| n.into())
             .collect::<Vec<String>>();
         splitted.retain(|x| !x.is_empty());
+
+        // TODO: Return Err instead of panicking ...
+        assert_eq!(splitted.len(), 0, "Classification name path must contains at least one classification");
 
         Ok(ClassificationNamePath { path: splitted })
     }

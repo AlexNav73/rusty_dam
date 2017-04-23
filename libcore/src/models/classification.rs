@@ -36,7 +36,7 @@ impl Classification {
             .parent()
             .and_then(|p| {
                           classifications
-                              .filter(name.eq(p))
+                              .filter(name.eq(p.name()))
                               .get_result::<(Uuid, Option<Uuid>, String)>(&*pg_conn)
                               .and_then(|row| Ok(row.0))
                               .ok()
@@ -44,7 +44,7 @@ impl Classification {
 
         self.parent_id = parent;
         ::diesel::update(classifications.filter(id.eq(self.id)))
-            .set((parent_id.eq(parent), name.eq(self.name_path.last())))
+            .set((parent_id.eq(parent), name.eq(self.name_path.name())))
             .execute(&*pg_conn)
             .map(|_| ())
             .map_err(|_| LoadError::NotFound)
@@ -57,7 +57,7 @@ impl Classification {
         let new_cls = NewClassification {
             id: self.id,
             parent_id: self.parent_id,
-            name: self.name_path.last(),
+            name: self.name_path.name(),
         };
         let pg_conn = self.application.pg().connect();
         ::diesel::insert(&new_cls)
@@ -68,13 +68,19 @@ impl Classification {
     }
 
     pub fn move_to<T: Into<ClassificationNamePath>>(&mut self, new_path: T) {
-        let name_path = new_path.into();
+        let mut name_path = new_path.into();
         let pg_conn = self.application.pg().connect();
 
         match name_path.is_valid(pg_conn) {
-            Ok(r) if r == true && self.name_path != name_path => {
-                self.name_path = name_path;
-                self.is_dirty = true;
+            Ok(r) if r == true => {
+                match self.name_path.parent() {
+                    Some(ref pnp) if name_path != *pnp => {
+                        name_path.append_node_unchecked(self.name_path.name());
+                        self.name_path = name_path;
+                        self.is_dirty = true;
+                    }
+                    _ => ()
+                }
             }
             _ => (),
         }
@@ -94,13 +100,13 @@ impl Classification {
         let name_path = name_path.into();
         let parent_cls = {
             // TODO: Create root classification instead of panicking ...
-            let parent_name = name_path
+            let parent = name_path
                 .parent()
                 .expect("Can't create root classification");
             let pg_conn = app.pg().connect();
 
             classifications
-                .filter(name.eq(parent_name))
+                .filter(name.eq(parent.name()))
                 .first::<CLS>(&*pg_conn)
                 .expect("Parent classification does not exists")
         };
