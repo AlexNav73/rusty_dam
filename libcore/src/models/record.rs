@@ -11,7 +11,7 @@ use connection::App;
 use models::es::RecordDto;
 use models::file::File;
 use models::field::Field;
-use models::classification::Classification;
+use models::classification::RecordClassification;
 use models::collections::EntityCollection;
 use models::collections::fields::FieldCollection;
 use models::collections::files::FileCollection;
@@ -125,7 +125,7 @@ impl FromDto for Record {
             classifications:
                 RefCell::new(ClassificationCollection::from_iter(dto.classifications
                                                                      .into_iter()
-                                                                     .map(|x| Classification::from_dto(x, app.clone())),
+                                                                     .map(|x| RecordClassification::from_dto(x, app.clone())),
                                                                  app.clone())),
             files: RefCell::new(FileCollection::from_iter(dto.files.into_iter().map(|x| File::from_dto(x, app.clone())),
                                                           app.clone())),
@@ -143,7 +143,7 @@ impl Load for Record {
     fn load(mut app: App, id: Uuid) -> Result<Self, LoadError> {
         let app_cloned = app.clone();
         app.es()
-            .by_id(app_cloned, id)
+            .get(app_cloned, id)
             .map_err(|_| LoadError::NotFound)
     }
 }

@@ -4,12 +4,12 @@ use uuid::Uuid;
 use std::collections::HashMap;
 
 use Entity;
-use models::classification::Classification;
+use models::classification::RecordClassification;
 use models::collections::{EntityCollection, Ids, IterMut};
 use connection::App;
 
 pub struct ClassificationCollection {
-    classifications: HashMap<Uuid, Classification>,
+    classifications: HashMap<Uuid, RecordClassification>,
     application: App,
 }
 
@@ -22,7 +22,7 @@ impl ClassificationCollection {
     }
 
     pub fn from_iter<'a, T>(iter: T, app: App) -> ClassificationCollection
-        where T: IntoIterator<Item = Classification>
+        where T: IntoIterator<Item=RecordClassification>
     {
         ClassificationCollection {
             classifications: iter.into_iter().map(|c| (c.id(), c)).collect(),
@@ -31,12 +31,12 @@ impl ClassificationCollection {
     }
 }
 
-impl EntityCollection<Classification> for ClassificationCollection {
-    fn ids(&self) -> Ids<Classification> {
+impl EntityCollection<RecordClassification> for ClassificationCollection {
+    fn ids(&self) -> Ids<RecordClassification> {
         Ids::new(self.classifications.keys())
     }
 
-    fn iter_mut(&mut self) -> IterMut<Classification> {
+    fn iter_mut(&mut self) -> IterMut<RecordClassification> {
         IterMut::new(self.application.clone(), self.classifications.values_mut())
     }
 }

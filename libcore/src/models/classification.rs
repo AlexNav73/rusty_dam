@@ -123,39 +123,6 @@ impl Classification {
     }
 }
 
-impl Entity for Classification {
-    fn id(&self) -> Uuid {
-        self.id
-    }
-}
-
-impl ToDto for Classification {
-    type Dto = ClassificationDto;
-
-    fn to_dto(&self) -> ClassificationDto {
-        ClassificationDto {
-            id: self.id,
-            parent_id: self.parent_id,
-            name_path: self.name_path.to_string(),
-        }
-    }
-}
-
-impl FromDto for Classification {
-    type Dto = ClassificationDto;
-
-    fn from_dto(dto: Self::Dto, app: App) -> Classification {
-        Classification {
-            id: dto.id,
-            parent_id: dto.parent_id,
-            name_path: dto.name_path.parse().unwrap(),
-            is_new: false,
-            is_dirty: false,
-            application: app,
-        }
-    }
-}
-
 impl Load for Classification {
     fn load(mut app: App, cls_id: Uuid) -> Result<Self, LoadError> {
         use models::pg::models::*;
@@ -187,3 +154,42 @@ impl fmt::Debug for Classification {
             .finish()
     }
 }
+
+pub struct RecordClassification {
+    id: Uuid,
+    parent_id: Option<Uuid>,
+    name_path: ClassificationNamePath,
+    application: App,
+}
+
+impl Entity for RecordClassification {
+    fn id(&self) -> Uuid {
+        self.id
+    }
+}
+
+impl ToDto for RecordClassification {
+    type Dto = ClassificationDto;
+
+    fn to_dto(&self) -> ClassificationDto {
+        ClassificationDto {
+            id: self.id,
+            parent_id: self.parent_id,
+            name_path: self.name_path.to_string(),
+        }
+    }
+}
+
+impl FromDto for RecordClassification {
+    type Dto = ClassificationDto;
+
+    fn from_dto(dto: Self::Dto, app: App) -> RecordClassification {
+        RecordClassification {
+            id: dto.id,
+            parent_id: dto.parent_id,
+            name_path: dto.name_path.parse().unwrap(),
+            application: app,
+        }
+    }
+}
+
