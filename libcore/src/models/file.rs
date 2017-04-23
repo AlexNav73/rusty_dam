@@ -14,10 +14,6 @@ pub struct File {
 }
 
 impl File {
-    pub fn id(&self) -> Uuid {
-        self.id
-    }
-
     pub fn new<P: Into<PathBuf>>(app: App, path: P) -> Self {
         File {
             id: Uuid::new_v4(),

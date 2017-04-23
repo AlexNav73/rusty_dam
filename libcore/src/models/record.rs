@@ -109,7 +109,6 @@ fn to_dto_collection<T, C>(collection: &mut C) -> Vec<<T as ToDto>::Dto>
           T: Load
 {
     collection
-        // TODO: Load all a once ... 
         .iter_mut()
         .map(|x| x.to_dto())
         .collect()

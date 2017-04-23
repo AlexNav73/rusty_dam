@@ -3,6 +3,7 @@ use uuid::Uuid;
 
 use std::collections::HashMap;
 
+use Entity;
 use models::classification::Classification;
 use models::collections::{EntityCollection, Ids, IterMut};
 use connection::App;

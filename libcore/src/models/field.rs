@@ -17,10 +17,6 @@ pub struct Field {
 }
 
 impl Field {
-    pub fn id(&self) -> Uuid {
-        self.id
-    }
-
     pub fn new<S: Into<String>>(app: App, fname: S) -> Self {
         Field {
             id: Uuid::new_v4(),
