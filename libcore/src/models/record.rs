@@ -10,7 +10,7 @@ use connection::App;
 
 use models::es::RecordDto;
 use models::file::File;
-use models::field::Field;
+use models::field::RecordField;
 use models::classification::RecordClassification;
 use models::collections::EntityCollection;
 use models::collections::fields::FieldCollection;
@@ -120,7 +120,7 @@ impl FromDto for Record {
     fn from_dto(dto: Self::Dto, app: App) -> Record {
         Record {
             id: dto.system.id,
-            fields: RefCell::new(FieldCollection::from_iter(dto.fields.into_iter().map(|x| Field::from_dto(x, app.clone())),
+            fields: RefCell::new(FieldCollection::from_iter(dto.fields.into_iter().map(|x| RecordField::from_dto(x, app.clone())),
                                                             app.clone())),
             classifications:
                 RefCell::new(ClassificationCollection::from_iter(dto.classifications

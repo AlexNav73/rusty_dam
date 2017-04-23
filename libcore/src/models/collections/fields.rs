@@ -5,11 +5,11 @@ use std::collections::HashMap;
 
 use Entity;
 use models::collections::{EntityCollection, Ids, IterMut};
-use models::field::Field;
+use models::field::RecordField;
 use connection::App;
 
 pub struct FieldCollection {
-    fields: HashMap<Uuid, Field>,
+    fields: HashMap<Uuid, RecordField>,
     application: App,
 }
 
@@ -22,7 +22,7 @@ impl FieldCollection {
     }
 
     pub fn from_iter<'a, T>(iter: T, app: App) -> Self
-        where T: IntoIterator<Item = Field>
+        where T: IntoIterator<Item = RecordField>
     {
         FieldCollection {
             fields: iter.into_iter().map(|f| (f.id(), f)).collect(),
@@ -31,12 +31,12 @@ impl FieldCollection {
     }
 }
 
-impl EntityCollection<Field> for FieldCollection {
-    fn ids(&self) -> Ids<Field> {
+impl EntityCollection<RecordField> for FieldCollection {
+    fn ids(&self) -> Ids<RecordField> {
         Ids::new(self.fields.keys())
     }
 
-    fn iter_mut(&mut self) -> IterMut<Field> {
+    fn iter_mut(&mut self) -> IterMut<RecordField> {
         IterMut::new(self.application.clone(), self.fields.values_mut())
     }
 }
