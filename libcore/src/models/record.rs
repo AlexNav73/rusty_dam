@@ -106,7 +106,7 @@ impl ToDto for Record {
 
 fn to_dto_collection<T, C>(collection: &mut C) -> Vec<<T as ToDto>::Dto>
     where C: EntityCollection<T>,
-          T: Load
+          T: ToDto + FromDto
 {
     collection
         .iter_mut()

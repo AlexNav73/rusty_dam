@@ -51,7 +51,7 @@ pub trait FromDto {
     fn from_dto(dto: Self::Dto, app: App) -> Self;
 }
 
-pub trait Load: Sized + FromDto + ToDto {
+pub trait Load: Sized {
     fn load(c: App, id: Uuid) -> Result<Self, LoadError>;
 }
 

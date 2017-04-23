@@ -2,7 +2,7 @@
 use diesel::prelude::*;
 use uuid::Uuid;
 
-use {Entity, ToDto, FromDto, Load, LoadError};
+use {Entity, ToDto, FromDto, LoadError};
 use models::es::FieldDto;
 use models::pg::schema::fields::dsl::*;
 use connection::App;
@@ -39,6 +39,7 @@ impl Field {
 
     fn set_value<T: Into<FieldValue>>(&mut self, value: T) {
         self.value = value.into();
+        self.is_dirty = true;
     }
 
     pub fn save(&mut self) -> Result<(), LoadError> {
@@ -113,12 +114,6 @@ impl FromDto for Field {
             is_dirty: false,
             application: app,
         }
-    }
-}
-
-impl Load for Field {
-    fn load(_app: App, _id: Uuid) -> Result<Self, LoadError> {
-        unimplemented!()
     }
 }
 

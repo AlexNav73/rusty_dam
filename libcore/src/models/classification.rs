@@ -67,6 +67,7 @@ impl Classification {
             .map_err(|_| LoadError::NotFound)
     }
 
+    // TODO: Move this method to ClassificationDefinition struct
     pub fn move_to<T: Into<ClassificationNamePath>>(&mut self, new_path: T) {
         let mut name_path = new_path.into();
         let pg_conn = self.application.pg().connect();

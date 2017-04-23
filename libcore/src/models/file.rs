@@ -3,7 +3,7 @@ use uuid::Uuid;
 
 use std::path::{Path, PathBuf};
 
-use {Entity, ToDto, FromDto, Load, LoadError};
+use {Entity, ToDto, FromDto};
 use models::es::FileDto;
 use connection::App;
 
@@ -61,11 +61,5 @@ impl FromDto for File {
             path: Path::new(dto.full_file_path.as_str()).to_path_buf(),
             application: app,
         }
-    }
-}
-
-impl Load for File {
-    fn load(_app: App, _id: Uuid) -> Result<Self, LoadError> {
-        unimplemented!()
     }
 }
