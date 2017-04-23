@@ -3,13 +3,12 @@ use uuid::Uuid;
 
 use std::collections::HashMap;
 
-use Lazy;
 use models::collections::{EntityCollection, Ids, IterMut};
 use models::field::Field;
 use connection::App;
 
 pub struct FieldCollection {
-    fields: HashMap<Uuid, Lazy<Field>>,
+    fields: HashMap<Uuid, Field>,
     application: App,
 }
 
@@ -22,12 +21,10 @@ impl FieldCollection {
     }
 
     pub fn from_iter<'a, T>(iter: T, app: App) -> Self
-        where T: IntoIterator<Item = Uuid>
+        where T: IntoIterator<Item = Field>
     {
         FieldCollection {
-            fields: iter.into_iter()
-                .map(|id| (id, Lazy::Guid(id)))
-                .collect(),
+            fields: iter.into_iter().map(|f| (f.id(), f)).collect(),
             application: app,
         }
     }

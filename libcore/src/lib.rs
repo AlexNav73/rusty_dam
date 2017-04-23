@@ -59,28 +59,6 @@ pub trait Create: FromDto + ToDto {
     fn create(app: App) -> Self;
 }
 
-pub enum Lazy<T: Load> {
-    Guid(Uuid),
-    Object(Box<T>),
-}
-
-impl<T: Load> Lazy<T> {
-    pub fn unwrap(&mut self, app: App) -> Result<&T, LoadError> {
-        match self {
-            &mut Lazy::Guid(id) => {
-                *self = Lazy::Object(Box::new(T::load(app, id).map_err(|_| LoadError::NotFound)?));
-
-                if let &mut Lazy::Object(ref o) = self {
-                    Ok(o)
-                } else {
-                    unreachable!()
-                }
-            }
-            &mut Lazy::Object(ref o) => Ok(o),
-        }
-    }
-}
-
 pub enum LoadError {
     NotFound,
 }

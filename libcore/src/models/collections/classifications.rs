@@ -3,13 +3,12 @@ use uuid::Uuid;
 
 use std::collections::HashMap;
 
-use Lazy;
 use models::classification::Classification;
 use models::collections::{EntityCollection, Ids, IterMut};
 use connection::App;
 
 pub struct ClassificationCollection {
-    classifications: HashMap<Uuid, Lazy<Classification>>,
+    classifications: HashMap<Uuid, Classification>,
     application: App,
 }
 
@@ -22,12 +21,10 @@ impl ClassificationCollection {
     }
 
     pub fn from_iter<'a, T>(iter: T, app: App) -> ClassificationCollection
-        where T: IntoIterator<Item = Uuid>
+        where T: IntoIterator<Item = Classification>
     {
         ClassificationCollection {
-            classifications: iter.into_iter()
-                .map(|id| (id, Lazy::Guid(id)))
-                .collect(),
+            classifications: iter.into_iter().map(|c| (c.id(), c)).collect(),
             application: app,
         }
     }

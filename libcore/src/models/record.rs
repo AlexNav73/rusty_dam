@@ -39,11 +39,19 @@ impl Record {
     }
 
     pub fn save(&mut self) -> Result<(), LoadError> {
-        let dto = self.to_dto();
-        self.application
-            .es()
-            .index(&dto)
-            .map_err(|_| LoadError::NotFound)
+        if self.is_new {
+            let dto = self.to_dto();
+            self.application
+                .es()
+                .index(&dto)
+                .map_err(|_| LoadError::NotFound)
+        } else {
+            self.update()
+        }
+    }
+
+    fn update(&mut self) -> Result<(), LoadError> {
+        unimplemented!()
     }
 }
 
@@ -103,8 +111,7 @@ fn to_dto_collection<T, C>(collection: &mut C) -> Vec<<T as ToDto>::Dto>
     collection
         // TODO: Load all a once ... 
         .iter_mut()
-        .filter(|x| x.is_ok())
-        .map(|x| x.unwrap().to_dto())
+        .map(|x| x.to_dto())
         .collect()
 }
 

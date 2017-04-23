@@ -20,6 +20,10 @@ pub struct Classification {
 }
 
 impl Classification {
+    pub fn id(&self) -> Uuid {
+        self.id
+    }
+
     pub fn save(&mut self) -> Result<(), LoadError> {
         if self.is_new {
             self.save_new()

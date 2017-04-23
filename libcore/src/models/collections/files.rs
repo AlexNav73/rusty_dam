@@ -3,14 +3,13 @@ use uuid::Uuid;
 
 use std::collections::HashMap;
 
-use Lazy;
 use models::collections::{EntityCollection, Ids, IterMut};
 use models::file::File;
 use connection::App;
 
 pub struct FileCollection {
     latest: Option<Uuid>,
-    files: HashMap<Uuid, Lazy<File>>,
+    files: HashMap<Uuid, File>,
     application: App,
 }
 
@@ -24,13 +23,11 @@ impl FileCollection {
     }
 
     pub fn from_iter<'a, T>(iter: T, app: App) -> FileCollection
-        where T: IntoIterator<Item = Uuid>
+        where T: IntoIterator<Item = File>
     {
         FileCollection {
             latest: None,
-            files: iter.into_iter()
-                .map(|id| (id, Lazy::Guid(id)))
-                .collect(),
+            files: iter.into_iter().map(|f| (f.id(), f)).collect(),
             application: app,
         }
     }

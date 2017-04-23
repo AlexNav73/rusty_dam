@@ -52,10 +52,6 @@ impl App {
         App(Rc::new(RefCell::new(Connection::new(config))))
     }
 
-    fn connection(&self) -> Rc<RefCell<Connection>> {
-        self.0.clone()
-    }
-
     pub fn es<'a>(&'a mut self) -> RefMut<'a, EsService> {
         RefMut::map((*self.0).borrow_mut(), |e| e.es())
     }
