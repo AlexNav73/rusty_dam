@@ -1,5 +1,6 @@
 [workspace]
 members = [
-   "libcore"
+   "libcore",
+   "file_storage"
 ]
 

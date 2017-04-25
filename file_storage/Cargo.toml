@@ -1,0 +1,13 @@
+[package]
+name = "file_storage"
+version = "0.1.0"
+authors = ["AlexNav73 <fifthhorseman@mail.ru>"]
+
+[dependencies]
+rocket = "0.2.6"
+rocket_codegen = "0.2.6"
+
+[dependencies.rocket_contrib]
+version = "*"
+default-features = false
+features = ["uuid"]
