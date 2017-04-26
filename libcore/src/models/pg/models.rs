@@ -19,7 +19,7 @@ pub struct NewClassification<'a> {
 }
 
 #[derive(Debug, Identifiable, Queryable, Associations)]
-#[belongs_to(Field2FieldGroup)]
+#[has_many(field2field_groups)]
 pub struct Field {
     pub id: Uuid,
     pub name: String,
@@ -36,25 +36,41 @@ pub struct NewField<'a> {
 #[has_many(field2field_groups)]
 pub struct FieldGroup {
     pub id: Uuid,
-    pub name: String
+    pub name: String,
 }
 
 #[derive(Insertable, Queryable, Associations)]
-#[has_many(fields, foreign_key="id")]
+#[belongs_to(Field)]
 #[belongs_to(FieldGroup)]
 #[table_name="field2field_groups"]
 pub struct Field2FieldGroup {
     pub field_id: Uuid,
-    pub field_group_id: Uuid
+    pub field_group_id: Uuid,
 }
 
 #[derive(Identifiable, Queryable, Associations)]
-#[belongs_to(User2UserGroup)]
+#[has_many(user2user_group)]
+#[has_many(sessions)]
+#[table_name="users"]
 pub struct User {
     pub id: Uuid,
     pub login: String,
     pub password: String,
-    pub email: String
+    pub email: String,
+}
+
+#[derive(Default, AsChangeset)]
+#[table_name="users"]
+pub struct UserChangeset<'a> {
+    pub login: Option<&'a str>,
+    pub password: Option<&'a str>,
+    pub email: Option<&'a str>,
+}
+
+impl<'a> UserChangeset<'a> {
+    pub fn is_dirty(&self) -> bool {
+        self.login.is_some() || self.password.is_some() || self.email.is_some()
+    }
 }
 
 #[derive(Insertable)]
@@ -63,7 +79,7 @@ pub struct NewUser<'a> {
     pub id: Uuid,
     pub login: &'a str,
     pub password: &'a str,
-    pub email: &'a str
+    pub email: &'a str,
 }
 
 #[derive(Identifiable, Queryable, Associations)]
@@ -71,23 +87,23 @@ pub struct NewUser<'a> {
 #[table_name="user_group"]
 pub struct UserGroup {
     pub id: Uuid,
-    pub name: String
+    pub name: String,
 }
 
 #[derive(Insertable)]
 #[table_name="user_group"]
 pub struct NewUserGroup<'a> {
     pub id: Uuid,
-    pub name: &'a str
+    pub name: &'a str,
 }
 
 #[derive(Insertable, Queryable, Associations)]
-#[has_many(users, foreign_key="id")]
+#[belongs_to(User)]
 #[belongs_to(UserGroup)]
 #[table_name="user2user_group"]
 pub struct User2UserGroup {
     pub user_id: Uuid,
-    pub user_group_id: Uuid
+    pub user_group_id: Uuid,
 }
 
 #[derive(Insertable, Queryable, Associations)]
@@ -95,5 +111,6 @@ pub struct User2UserGroup {
 #[table_name="sessions"]
 pub struct Session {
     pub id: Uuid,
-    pub user_id: Uuid
+    pub user_id: Uuid,
+    pub login: String,
 }

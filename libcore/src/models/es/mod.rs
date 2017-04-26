@@ -41,10 +41,3 @@ impl EsDto for RecordDto {
         self.system.id
     }
 }
-
-#[derive(Serialize, Deserialize)]
-pub struct UserDto {
-    pub id: Uuid,
-    pub login: String,
-    pub passwd: String,
-}

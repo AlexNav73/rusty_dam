@@ -146,10 +146,7 @@ impl EsService {
         EsService { client: EsRepository::new(url, index) }
     }
 
-    pub fn get<D: EsDto, T: FromDto<Dto = D>>(&mut self,
-                                                app: App,
-                                                id: Uuid)
-                                                -> Result<T, EsError> {
+    pub fn get<D: EsDto, T: FromDto<Dto = D>>(&mut self, app: App, id: Uuid) -> Result<T, EsError> {
         self.client
             .get::<D>(id)
             .map_err(|_| EsError::NotFound)

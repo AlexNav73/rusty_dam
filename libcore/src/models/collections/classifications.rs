@@ -22,7 +22,7 @@ impl ClassificationCollection {
     }
 
     pub fn from_iter<'a, T>(iter: T, app: App) -> ClassificationCollection
-        where T: IntoIterator<Item=RecordClassification>
+        where T: IntoIterator<Item = RecordClassification>
     {
         ClassificationCollection {
             classifications: iter.into_iter().map(|c| (c.id(), c)).collect(),

@@ -3,17 +3,15 @@ use uuid::Uuid;
 use dotenv::dotenv;
 
 use std::rc::Rc;
-use std::cell::{RefCell, RefMut, Ref};
+use std::cell::{RefCell, RefMut};
 use std::env;
 
 use {Create, Load, LoadError};
 use es::EsService;
 use pg::PgService;
-use models::user::User;
 use configuration::Configuration;
 
 struct Connection {
-    user: User,
     es_client: EsService,
     pg_client: PgService,
 }
@@ -25,7 +23,6 @@ impl Connection {
         let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
         Connection {
             // TODO: Proper impl
-            user: User::get(),
             es_client: EsService::new(config.es_url(), config.es_index_name()),
             pg_client: PgService::new(database_url),
         }
@@ -37,10 +34,6 @@ impl Connection {
 
     fn pg(&mut self) -> &mut PgService {
         &mut self.pg_client
-    }
-
-    fn user(&self) -> &User {
-        &self.user
     }
 }
 
@@ -58,10 +51,6 @@ impl App {
 
     pub fn pg<'a>(&'a mut self) -> RefMut<'a, PgService> {
         RefMut::map((*self.0).borrow_mut(), |e| e.pg())
-    }
-
-    pub fn user<'a>(&'a self) -> Ref<'a, User> {
-        Ref::map((*self.0).borrow(), |e| e.user())
     }
 
     pub fn get<T: Load>(&self, id: Uuid) -> Result<T, LoadError> {

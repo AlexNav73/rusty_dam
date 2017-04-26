@@ -31,6 +31,7 @@ impl Classification {
     }
 
     fn update(&mut self) -> Result<(), LoadError> {
+        self.is_dirty = false;
         let pg_conn = self.application.pg().connect();
         let parent = self.name_path
             .parent()
@@ -67,7 +68,6 @@ impl Classification {
             .map_err(|_| LoadError::NotFound)
     }
 
-    // TODO: Move this method to ClassificationDefinition struct
     pub fn move_to<T: Into<ClassificationNamePath>>(&mut self, new_path: T) {
         let mut name_path = new_path.into();
         let pg_conn = self.application.pg().connect();
@@ -76,11 +76,13 @@ impl Classification {
             Ok(r) if r == true => {
                 match self.name_path.parent() {
                     Some(ref pnp) if name_path != *pnp => {
-                        name_path.append_node_unchecked(self.name_path.name());
+                        unsafe {
+                            name_path.append_node_unchecked(self.name_path.name());
+                        }
                         self.name_path = name_path;
                         self.is_dirty = true;
                     }
-                    _ => ()
+                    _ => (),
                 }
             }
             _ => (),
@@ -192,4 +194,3 @@ impl FromDto for RecordClassification {
         }
     }
 }
-

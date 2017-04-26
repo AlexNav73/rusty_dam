@@ -11,6 +11,7 @@ extern crate diesel;
 extern crate diesel_codegen;
 extern crate dotenv;
 
+extern crate tiny_keccak as crypto;
 extern crate uuid;
 extern crate rs_es;
 extern crate chrono;

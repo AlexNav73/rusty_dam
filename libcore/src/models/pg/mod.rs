@@ -41,14 +41,18 @@ impl ClassificationNamePath {
 
         if len > 1 {
             Some(ClassificationNamePath {
-                path: self.path.iter().take(self.path.len() - 2).cloned().collect()
-            })
+                     path: self.path
+                         .iter()
+                         .take(self.path.len() - 2)
+                         .cloned()
+                         .collect(),
+                 })
         } else {
             None
         }
     }
 
-    pub fn append_node_unchecked<S: Into<String>>(&mut self, node: S) {
+    pub unsafe fn append_node_unchecked<S: Into<String>>(&mut self, node: S) {
         self.path.push(node.into());
     }
 
@@ -89,7 +93,9 @@ impl FromStr for ClassificationNamePath {
         splitted.retain(|x| !x.is_empty());
 
         // TODO: Return Err instead of panicking ...
-        assert_eq!(splitted.len(), 0, "Classification name path must contains at least one classification");
+        assert_eq!(splitted.len(),
+                   0,
+                   "Classification name path must contains at least one classification");
 
         Ok(ClassificationNamePath { path: splitted })
     }

@@ -70,8 +70,9 @@ impl Create for Record {
             files: RefCell::new(FileCollection::new(app.clone())),
             created_on: UTC::now(),
             modified_on: UTC::now(),
-            created_by: app.user().login().to_string(),
-            modified_by: app.user().login().to_string(),
+            // TODO: Proper impl
+            created_by: "".to_string(),
+            modified_by: "".to_string(),
             is_new: true,
             application: app.clone(),
         }
@@ -108,10 +109,7 @@ fn to_dto_collection<T, C>(collection: &mut C) -> Vec<<T as ToDto>::Dto>
     where C: EntityCollection<T>,
           T: ToDto + FromDto
 {
-    collection
-        .iter_mut()
-        .map(|x| x.to_dto())
-        .collect()
+    collection.iter_mut().map(|x| x.to_dto()).collect()
 }
 
 impl FromDto for Record {

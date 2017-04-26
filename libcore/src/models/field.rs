@@ -34,22 +34,22 @@ impl Field {
         use diesel::associations::HasTable;
 
         let pg_conn = self.application.pg().connect();
-        let fg_exists: Result<bool, _> = ::diesel::select(exists(field_groups.filter(id.eq(fg_id))))
-            .get_result(&*pg_conn);
+        let fg_exists: Result<bool, _> =
+            ::diesel::select(exists(field_groups.filter(id.eq(fg_id)))).get_result(&*pg_conn);
 
         match fg_exists {
             Ok(r) if r == true => {
                 let m2m = Field2FieldGroup {
                     field_id: self.id,
-                    field_group_id: fg_id
+                    field_group_id: fg_id,
                 };
-               ::diesel::insert(&m2m)
+                ::diesel::insert(&m2m)
                     .into(f2fg::field2field_groups::table())
                     .execute(&*pg_conn)
                     .map(|_| ())
                     .map_err(|_| LoadError::NotFound)
             }
-            _ => Ok(())
+            _ => Ok(()),
         }
     }
 
@@ -64,6 +64,7 @@ impl Field {
     }
 
     fn update(&mut self) -> Result<(), LoadError> {
+        self.is_dirty = false;
         let pg_conn = self.application.pg().connect();
 
         ::diesel::update(dsl::fields.filter(dsl::id.eq(self.id)))
@@ -96,17 +97,18 @@ impl Load for Field {
         use models::pg::models::*;
 
         let pg_conn = app.pg().connect();
-        dsl::fields.filter(dsl::id.eq(fid))
+        dsl::fields
+            .filter(dsl::id.eq(fid))
             .first::<Field>(&*pg_conn)
             .map_err(|_| LoadError::NotFound)
             .and_then(|f| {
                 Ok(self::Field {
-                    id: f.id,
-                    name: f.name,
-                    is_new: false,
-                    is_dirty: false,
-                    application: app
-                })
+                       id: f.id,
+                       name: f.name,
+                       is_new: false,
+                       is_dirty: false,
+                       application: app,
+                   })
             })
     }
 }
