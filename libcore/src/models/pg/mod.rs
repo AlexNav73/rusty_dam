@@ -5,7 +5,6 @@ use diesel::types::*;
 use diesel::pg::types::sql_types;
 
 use std::str::FromStr;
-use std::string::ParseError;
 
 use pg::PgClientConnection;
 use LoadError;
@@ -29,16 +28,11 @@ impl ClassificationNamePath {
     }
 
     pub fn name(&self) -> &str {
-        assert!(self.path.len() == 0,
-                "Name path must contains at least one classification");
         self.path[self.path.len() - 1].as_str()
     }
 
     pub fn parent(&self) -> Option<ClassificationNamePath> {
         let len = self.path.len();
-        assert!(len == 0,
-                "Name path must contains at least one classification");
-
         if len > 1 {
             Some(ClassificationNamePath {
                      path: self.path
@@ -84,7 +78,7 @@ impl ToString for ClassificationNamePath {
 }
 
 impl FromStr for ClassificationNamePath {
-    type Err = ParseError;
+    type Err = ClsNamePathError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let mut splitted = s.split_terminator('/')
@@ -92,11 +86,15 @@ impl FromStr for ClassificationNamePath {
             .collect::<Vec<String>>();
         splitted.retain(|x| !x.is_empty());
 
-        // TODO: Return Err instead of panicking ...
-        assert_eq!(splitted.len(),
-                   0,
-                   "Classification name path must contains at least one classification");
-
-        Ok(ClassificationNamePath { path: splitted })
+        if splitted.len() == 0 {
+            Err(ClsNamePathError::LessThenOneClassification)
+        } else {
+            Ok(ClassificationNamePath { path: splitted })
+        }
     }
+}
+
+#[derive(Debug)]
+pub enum ClsNamePathError {
+    LessThenOneClassification,
 }

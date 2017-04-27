@@ -16,14 +16,18 @@ pub struct Field {
 }
 
 impl Field {
-    pub fn new<S: Into<String>>(app: App, fname: S) -> Self {
-        Field {
-            id: Uuid::new_v4(),
-            name: fname.into(),
-            is_new: true,
-            is_dirty: false,
-            application: app,
+    pub fn new<S: Into<String>>(app: App, fname: S) -> Result<Self, LoadError> {
+        if app.session().is_none() {
+            return Err(LoadError::Unauthorized);
         }
+
+        Ok(Field {
+               id: Uuid::new_v4(),
+               name: fname.into(),
+               is_new: true,
+               is_dirty: false,
+               application: app,
+           })
     }
 
     pub fn add_to_field_group(&mut self, fg_id: Uuid) -> Result<(), LoadError> {
@@ -32,6 +36,10 @@ impl Field {
         use models::pg::schema::field_groups::dsl::*;
         use models::pg::schema::field2field_groups::dsl as f2fg;
         use diesel::associations::HasTable;
+
+        if self.application.session().is_none() {
+            return Err(LoadError::Unauthorized);
+        }
 
         let pg_conn = self.application.pg().connect();
         let fg_exists: Result<bool, _> =
@@ -54,6 +62,10 @@ impl Field {
     }
 
     pub fn save(&mut self) -> Result<(), LoadError> {
+        if self.application.session().is_none() {
+            return Err(LoadError::Unauthorized);
+        }
+
         if self.is_new {
             self.save_new()
         } else if self.is_dirty {
@@ -90,11 +102,27 @@ impl Field {
             .map(|_| ())
             .map_err(|_| LoadError::NotFound)
     }
+
+    pub fn delete(mut self) -> Result<(), LoadError> {
+        if self.application.session().is_none() {
+            return Err(LoadError::Unauthorized);
+        }
+
+        let pg_conn = self.application.pg().connect();
+        ::diesel::delete(dsl::fields.filter(dsl::id.eq(self.id)))
+            .execute(&*pg_conn)
+            .map(|_| ())
+            .map_err(|_| LoadError::NotFound)
+    }
 }
 
 impl Load for Field {
     fn load(mut app: App, fid: Uuid) -> Result<Self, LoadError> {
         use models::pg::models::*;
+
+        if app.session().is_none() {
+            return Err(LoadError::Unauthorized);
+        }
 
         let pg_conn = app.pg().connect();
         dsl::fields
@@ -142,10 +170,6 @@ impl ToDto for RecordField {
     type Dto = FieldDto;
 
     fn to_dto(&self) -> FieldDto {
-        if self.name.is_empty() {
-            panic!("Field name is empty");
-        }
-
         FieldDto {
             id: self.id,
             name: self.name.clone(),

@@ -56,18 +56,21 @@ pub trait Load: Sized {
     fn load(c: App, id: Uuid) -> Result<Self, LoadError>;
 }
 
-pub trait Create: FromDto + ToDto {
-    fn create(app: App) -> Self;
-}
-
+#[derive(Debug)]
 pub enum LoadError {
     NotFound,
+    ParentNotExists,
+    RootCls,
+    Unauthorized,
 }
 
-impl fmt::Debug for LoadError {
+impl fmt::Display for LoadError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             &LoadError::NotFound => write!(f, "File not found"),
+            &LoadError::ParentNotExists => write!(f, "Parent classification doesn't exists"),
+            &LoadError::RootCls => write!(f, "Can't create root classification"),
+            &LoadError::Unauthorized => write!(f, "Unauthorized access to DAM"),
         }
     }
 }

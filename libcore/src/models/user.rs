@@ -17,12 +17,16 @@ pub struct User {
 }
 
 impl User {
-    pub fn new<L, P, E>(app: App, login: L, password: P, email: E) -> User
+    pub fn new<L, P, E>(app: App, login: L, password: P, email: E) -> Result<User, LoadError>
         where L: Into<String>,
               P: Into<String>,
               E: Into<String>
     {
-        User {
+        if app.session().is_none() {
+            return Err(LoadError::Unauthorized);
+        }
+
+        Ok(User {
             id: Uuid::new_v4(),
             login: login.into(),
             password: password.into(),
@@ -30,7 +34,7 @@ impl User {
             is_new: true,
             is_dirty: (false, false, false),
             application: app,
-        }
+        })
     }
 
     fn is_dirty(&self) -> bool {
@@ -38,6 +42,10 @@ impl User {
     }
 
     pub fn save(&mut self) -> Result<(), LoadError> {
+        if self.application.session().is_none() {
+            return Err(LoadError::Unauthorized);
+        }
+
         if self.is_new {
             self.save_new()
         } else if self.is_dirty() {
@@ -97,12 +105,30 @@ impl User {
             .map(|_| ())
             .map_err(|_| LoadError::NotFound)
     }
+
+    pub fn delete(mut self) -> Result<(), LoadError> {
+        use models::pg::schema::users::dsl::*;
+
+        if self.application.session().is_none() {
+            return Err(LoadError::Unauthorized);
+        }
+
+        let pg_conn = self.application.pg().connect();
+        ::diesel::delete(users.filter(id.eq(self.id)))
+            .execute(&*pg_conn)
+            .map(|_| ())
+            .map_err(|_| LoadError::NotFound)
+    }
 }
 
 impl Load for User {
     fn load(mut app: App, uid: Uuid) -> Result<Self, LoadError> {
         use models::pg::schema::users::dsl::*;
         use models::pg::models::*;
+
+        if app.session().is_none() {
+            return Err(LoadError::Unauthorized);
+        }
 
         let pg_conn = app.pg().connect();
         users

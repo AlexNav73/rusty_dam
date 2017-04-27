@@ -21,6 +21,10 @@ pub struct Classification {
 
 impl Classification {
     pub fn save(&mut self) -> Result<(), LoadError> {
+        if self.application.session().is_none() {
+            return Err(LoadError::Unauthorized);
+        }
+
         if self.is_new {
             self.save_new()
         } else if self.is_dirty {
@@ -68,7 +72,13 @@ impl Classification {
             .map_err(|_| LoadError::NotFound)
     }
 
-    pub fn move_to<T: Into<ClassificationNamePath>>(&mut self, new_path: T) {
+    pub fn move_to<T: Into<ClassificationNamePath>>(&mut self,
+                                                    new_path: T)
+                                                    -> Result<(), LoadError> {
+        if self.application.session().is_none() {
+            return Err(LoadError::Unauthorized);
+        }
+
         let mut name_path = new_path.into();
         let pg_conn = self.application.pg().connect();
 
@@ -81,15 +91,20 @@ impl Classification {
                         }
                         self.name_path = name_path;
                         self.is_dirty = true;
+                        Ok(())
                     }
-                    _ => (),
+                    _ => Ok(()),
                 }
             }
-            _ => (),
+            _ => Ok(()),
         }
     }
 
     pub fn delete(mut self) -> Result<(), LoadError> {
+        if self.application.session().is_none() {
+            return Err(LoadError::Unauthorized);
+        }
+
         let pg_conn = self.application.pg().connect();
         ::diesel::delete(classifications.filter(id.eq(self.id)))
             .execute(&*pg_conn)
@@ -97,37 +112,44 @@ impl Classification {
             .map_err(|_| LoadError::NotFound)
     }
 
-    pub fn new<N: Into<ClassificationNamePath>>(mut app: App, name_path: N) -> Self {
+    pub fn new<N: Into<ClassificationNamePath>>(mut app: App,
+                                                name_path: N)
+                                                -> Result<Self, LoadError> {
         use models::pg::models::Classification as CLS;
+
+        if app.session().is_none() {
+            return Err(LoadError::Unauthorized);
+        }
 
         let name_path = name_path.into();
         let parent_cls = {
-            // TODO: Create root classification instead of panicking ...
-            let parent = name_path
-                .parent()
-                .expect("Can't create root classification");
+            let parent = name_path.parent().ok_or(LoadError::RootCls)?;
             let pg_conn = app.pg().connect();
 
             classifications
                 .filter(name.eq(parent.name()))
                 .first::<CLS>(&*pg_conn)
-                .expect("Parent classification does not exists")
+                .map_err(|_| LoadError::ParentNotExists)?
         };
 
-        Classification {
-            id: Uuid::new_v4(),
-            parent_id: Some(parent_cls.id),
-            name_path: name_path,
-            is_new: true,
-            is_dirty: false,
-            application: app,
-        }
+        Ok(Classification {
+               id: Uuid::new_v4(),
+               parent_id: Some(parent_cls.id),
+               name_path: name_path,
+               is_new: true,
+               is_dirty: false,
+               application: app,
+           })
     }
 }
 
 impl Load for Classification {
     fn load(mut app: App, cls_id: Uuid) -> Result<Self, LoadError> {
         use models::pg::models::*;
+
+        if app.session().is_none() {
+            return Err(LoadError::Unauthorized);
+        }
 
         let pg_conn = app.pg().connect();
         classifications

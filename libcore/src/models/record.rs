@@ -4,7 +4,7 @@ use chrono::{DateTime, UTC};
 
 use std::cell::RefCell;
 
-use {Create, Load, LoadError, Entity, ToDto, FromDto};
+use {Load, LoadError, Entity, ToDto, FromDto};
 use es::SystemInfo;
 use connection::App;
 
@@ -31,7 +31,35 @@ pub struct Record {
 }
 
 impl Record {
+    pub fn new(app: App) -> Result<Record, LoadError> {
+        if app.session().is_none() {
+            return Err(LoadError::Unauthorized);
+        }
+
+        let mut login = String::new();
+        if let Some(ref s) = *app.session() {
+            login = s.login();
+        }
+
+        Ok(Record {
+               id: Uuid::new_v4(),
+               fields: RefCell::new(FieldCollection::new(app.clone())),
+               classifications: RefCell::new(ClassificationCollection::new(app.clone())),
+               files: RefCell::new(FileCollection::new(app.clone())),
+               created_on: UTC::now(),
+               modified_on: UTC::now(),
+               created_by: login.clone(),
+               modified_by: login,
+               is_new: true,
+               application: app.clone(),
+           })
+    }
+
     pub fn delete(mut self) -> Result<(), LoadError> {
+        if self.application.session().is_none() {
+            return Err(LoadError::Unauthorized);
+        }
+
         self.application
             .es()
             .delete::<RecordDto>(self.id)
@@ -39,6 +67,10 @@ impl Record {
     }
 
     pub fn save(&mut self) -> Result<(), LoadError> {
+        if self.application.session().is_none() {
+            return Err(LoadError::Unauthorized);
+        }
+
         if self.is_new {
             let dto = self.to_dto();
             self.application
@@ -51,7 +83,21 @@ impl Record {
     }
 
     fn update(&mut self) -> Result<(), LoadError> {
-        unimplemented!()
+        if self.application.session().is_none() {
+            return Err(LoadError::Unauthorized);
+        }
+
+        // TODO: For now, just reindex whole document
+        self.application
+            .es()
+            .delete::<RecordDto>(self.id)
+            .map_err(|_| LoadError::NotFound)?;
+
+        let dto = self.to_dto();
+        self.application
+            .es()
+            .index(&dto)
+            .map_err(|_| LoadError::NotFound)
     }
 }
 
@@ -61,34 +107,12 @@ impl Entity for Record {
     }
 }
 
-impl Create for Record {
-    fn create(app: App) -> Record {
-        Record {
-            id: Uuid::new_v4(),
-            fields: RefCell::new(FieldCollection::new(app.clone())),
-            classifications: RefCell::new(ClassificationCollection::new(app.clone())),
-            files: RefCell::new(FileCollection::new(app.clone())),
-            created_on: UTC::now(),
-            modified_on: UTC::now(),
-            // TODO: Proper impl
-            created_by: "".to_string(),
-            modified_by: "".to_string(),
-            is_new: true,
-            application: app.clone(),
-        }
-    }
-}
-
 impl ToDto for Record {
     type Dto = RecordDto;
 
     fn to_dto(&self) -> RecordDto {
         let classifications = to_dto_collection(&mut *self.classifications.borrow_mut());
         let files = to_dto_collection(&mut *self.files.borrow_mut());
-
-        assert!(classifications.is_empty(),
-                "Record must be assign at least one classification");
-        assert!(files.is_empty(), "Record must contains at least one file");
 
         RecordDto {
             fields: to_dto_collection(&mut *self.fields.borrow_mut()),
@@ -118,14 +142,18 @@ impl FromDto for Record {
     fn from_dto(dto: Self::Dto, app: App) -> Record {
         Record {
             id: dto.system.id,
-            fields: RefCell::new(FieldCollection::from_iter(dto.fields.into_iter().map(|x| RecordField::from_dto(x, app.clone())),
+            fields: RefCell::new(FieldCollection::from_iter(dto.fields
+                                                               .into_iter()
+                                                               .map(|x| RecordField::from_dto(x, app.clone())),
                                                             app.clone())),
             classifications:
                 RefCell::new(ClassificationCollection::from_iter(dto.classifications
-                                                                     .into_iter()
-                                                                     .map(|x| RecordClassification::from_dto(x, app.clone())),
+                                                                    .into_iter()
+                                                                    .map(|x| RecordClassification::from_dto(x, app.clone())),
                                                                  app.clone())),
-            files: RefCell::new(FileCollection::from_iter(dto.files.into_iter().map(|x| File::from_dto(x, app.clone())),
+            files: RefCell::new(FileCollection::from_iter(dto.files
+                                                             .into_iter()
+                                                             .map(|x| File::from_dto(x, app.clone())),
                                                           app.clone())),
             created_by: dto.system.created_by.to_string(),
             created_on: DateTime::from_utc(dto.system.created_on, UTC),
@@ -139,6 +167,10 @@ impl FromDto for Record {
 
 impl Load for Record {
     fn load(mut app: App, id: Uuid) -> Result<Self, LoadError> {
+        if app.session().is_none() {
+            return Err(LoadError::Unauthorized);
+        }
+
         let app_cloned = app.clone();
         app.es()
             .get(app_cloned, id)

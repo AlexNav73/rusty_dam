@@ -107,7 +107,7 @@ pub struct User2UserGroup {
 }
 
 #[derive(Insertable, Queryable, Associations)]
-#[belongs_to(User)]
+#[belongs_to(User, foreign_key="user_id")]
 #[table_name="sessions"]
 pub struct Session {
     pub id: Uuid,
