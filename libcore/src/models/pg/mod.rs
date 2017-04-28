@@ -31,6 +31,11 @@ impl ClassificationNamePath {
         self.path[self.path.len() - 1].as_str()
     }
 
+    pub fn set_name(&mut self, name: String) {
+        let last = self.path.len() - 1;
+        self.path[last] = name;
+    }
+
     pub fn parent(&self) -> Option<ClassificationNamePath> {
         let len = self.path.len();
         if len > 1 {

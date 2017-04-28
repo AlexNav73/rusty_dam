@@ -34,24 +34,33 @@ impl Classification {
         }
     }
 
+    // TODO: Update only what was changed
     fn update(&mut self) -> Result<(), LoadError> {
+        use models::pg::models::ClassificationChangeset;
+
         self.is_dirty = false;
         let pg_conn = self.application.pg().connect();
-        let parent = self.name_path
-            .parent()
-            .and_then(|p| {
-                          classifications
-                              .filter(name.eq(p.name()))
-                              .get_result::<(Uuid, Option<Uuid>, String)>(&*pg_conn)
-                              .and_then(|row| Ok(row.0))
-                              .ok()
-                      });
+        let pname = self.name_path.parent();
 
-        self.parent_id = parent;
-        ::diesel::update(classifications.filter(id.eq(self.id)))
-            .set((parent_id.eq(parent), name.eq(self.name_path.name())))
-            .execute(&*pg_conn)
-            .map(|_| ())
+        let pidchange = if let Some(ref p) = pname {
+            Some(classifications
+                     .filter(name.eq(p.name()))
+                     .select(parent_id)
+                     .first::<Option<Uuid>>(&*pg_conn)
+                     .map_err(|_| LoadError::NotFound)?)
+        } else {
+            None
+        };
+
+        let changes = ClassificationChangeset {
+            parent_id: pidchange,
+            name: Some(self.name_path.name().to_owned()),
+        };
+
+        ::diesel::update(classifications.find(self.id))
+            .set(&changes)
+            .get_result::<(Uuid, Option<Uuid>, String)>(&*pg_conn)
+            .map(|e| self.parent_id = e.1)
             .map_err(|_| LoadError::NotFound)
     }
 
@@ -100,13 +109,18 @@ impl Classification {
         }
     }
 
+    pub fn rename<N: Into<String>>(&mut self, new_name: N) {
+        self.name_path.set_name(new_name.into());
+        self.is_dirty = true;
+    }
+
     pub fn delete(mut self) -> Result<(), LoadError> {
         if self.application.session().is_none() {
             return Err(LoadError::Unauthorized);
         }
 
         let pg_conn = self.application.pg().connect();
-        ::diesel::delete(classifications.filter(id.eq(self.id)))
+        ::diesel::delete(classifications.find(self.id))
             .execute(&*pg_conn)
             .map(|_| ())
             .map_err(|_| LoadError::NotFound)
@@ -153,7 +167,7 @@ impl Load for Classification {
 
         let pg_conn = app.pg().connect();
         classifications
-            .filter(id.eq(cls_id))
+            .find(cls_id)
             .first::<Classification>(&*pg_conn)
             .map_err(|_| LoadError::NotFound)
             .and_then(|c| {

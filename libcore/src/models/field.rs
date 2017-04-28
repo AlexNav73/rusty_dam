@@ -42,8 +42,8 @@ impl Field {
         }
 
         let pg_conn = self.application.pg().connect();
-        let fg_exists: Result<bool, _> =
-            ::diesel::select(exists(field_groups.filter(id.eq(fg_id)))).get_result(&*pg_conn);
+        let fg_exists = ::diesel::select(exists(field_groups.find(fg_id)))
+            .get_result::<bool>(&*pg_conn);
 
         match fg_exists {
             Ok(r) if r == true => {
@@ -79,7 +79,7 @@ impl Field {
         self.is_dirty = false;
         let pg_conn = self.application.pg().connect();
 
-        ::diesel::update(dsl::fields.filter(dsl::id.eq(self.id)))
+        ::diesel::update(dsl::fields.find(self.id))
             .set(dsl::name.eq(self.name.as_str()))
             .execute(&*pg_conn)
             .map(|_| ())
@@ -109,7 +109,7 @@ impl Field {
         }
 
         let pg_conn = self.application.pg().connect();
-        ::diesel::delete(dsl::fields.filter(dsl::id.eq(self.id)))
+        ::diesel::delete(dsl::fields.find(self.id))
             .execute(&*pg_conn)
             .map(|_| ())
             .map_err(|_| LoadError::NotFound)
@@ -126,7 +126,7 @@ impl Load for Field {
 
         let pg_conn = app.pg().connect();
         dsl::fields
-            .filter(dsl::id.eq(fid))
+            .find(fid)
             .first::<Field>(&*pg_conn)
             .map_err(|_| LoadError::NotFound)
             .and_then(|f| {

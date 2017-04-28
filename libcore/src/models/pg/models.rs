@@ -10,6 +10,13 @@ pub struct Classification {
     pub name: String,
 }
 
+#[derive(Default, AsChangeset)]
+#[table_name="classifications"]
+pub struct ClassificationChangeset {
+    pub parent_id: Option<Option<Uuid>>,
+    pub name: Option<String>,
+}
+
 #[derive(Insertable)]
 #[table_name="classifications"]
 pub struct NewClassification<'a> {
@@ -56,7 +63,7 @@ pub struct User {
     pub id: Uuid,
     pub login: String,
     pub password: String,
-    pub email: String,
+    pub email: Option<String>,
 }
 
 #[derive(Default, AsChangeset)]
@@ -64,7 +71,7 @@ pub struct User {
 pub struct UserChangeset<'a> {
     pub login: Option<&'a str>,
     pub password: Option<&'a str>,
-    pub email: Option<&'a str>,
+    pub email: Option<Option<&'a str>>,
 }
 
 impl<'a> UserChangeset<'a> {
@@ -79,7 +86,7 @@ pub struct NewUser<'a> {
     pub id: Uuid,
     pub login: &'a str,
     pub password: &'a str,
-    pub email: &'a str,
+    pub email: Option<&'a str>,
 }
 
 #[derive(Identifiable, Queryable, Associations)]

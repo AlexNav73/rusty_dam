@@ -10,14 +10,14 @@ pub struct User {
     id: Uuid,
     login: String,
     password: String,
-    email: String,
+    email: Option<String>,
     is_new: bool,
     is_dirty: (bool, bool, bool),
     application: App,
 }
 
 impl User {
-    pub fn new<L, P, E>(app: App, login: L, password: P, email: E) -> Result<User, LoadError>
+    pub fn new<L, P, E>(app: App, login: L, password: P, email: Option<E>) -> Result<User, LoadError>
         where L: Into<String>,
               P: Into<String>,
               E: Into<String>
@@ -27,14 +27,14 @@ impl User {
         }
 
         Ok(User {
-            id: Uuid::new_v4(),
-            login: login.into(),
-            password: password.into(),
-            email: email.into(),
-            is_new: true,
-            is_dirty: (false, false, false),
-            application: app,
-        })
+               id: Uuid::new_v4(),
+               login: login.into(),
+               password: password.into(),
+               email: email.map(|e| e.into()),
+               is_new: true,
+               is_dirty: (false, false, false),
+               application: app,
+           })
     }
 
     fn is_dirty(&self) -> bool {
@@ -69,12 +69,12 @@ impl User {
             self.is_dirty.1 = false;
         }
         if self.is_dirty.2 {
-            changes.email = Some(&self.email);
+            changes.email = Some(self.email.as_ref().map(|s| s.as_str()));
             self.is_dirty.2 = false;
         }
 
         let pg_conn = self.application.pg().connect();
-        ::diesel::update(users.filter(id.eq(self.id)))
+        ::diesel::update(users.find(self.id))
             .set(&changes)
             .execute(&*pg_conn)
             .map(|_| ())
@@ -95,7 +95,7 @@ impl User {
             id: self.id,
             login: &self.login,
             password: &*String::from_utf8_lossy(&res),
-            email: &self.email,
+            email: self.email.as_ref().map(|s| s.as_str()),
         };
 
         let pg_conn = self.application.pg().connect();
@@ -114,10 +114,23 @@ impl User {
         }
 
         let pg_conn = self.application.pg().connect();
-        ::diesel::delete(users.filter(id.eq(self.id)))
+        ::diesel::delete(users.find(self.id))
             .execute(&*pg_conn)
             .map(|_| ())
             .map_err(|_| LoadError::NotFound)
+    }
+
+    pub unsafe fn create_administrator<L, P>(mut app: App, login: L, password: P) -> Result<Uuid, LoadError>
+        where L: Into<String>, P: Into<String>
+    {
+        use diesel::types::Text;
+
+        sql_function!(create_admin,
+                      create_admin_t,
+                      (uname: Text, passwd: Text) -> ::diesel::pg::types::sql_types::Uuid);
+
+        let pg_conn = app.pg().connect();
+        exec_fn!(create_admin(login.into(), password.into()), pg_conn)
     }
 }
 
@@ -132,7 +145,7 @@ impl Load for User {
 
         let pg_conn = app.pg().connect();
         users
-            .filter(id.eq(uid))
+            .find(uid)
             .first::<User>(&*pg_conn)
             .map_err(|_| LoadError::NotFound)
             .and_then(|u| {
