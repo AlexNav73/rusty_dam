@@ -26,15 +26,15 @@ fn get_record() {
     c.as_admin(|app| {
         let mut new_record = Record::new(app.clone()).unwrap();
         let record_id = new_record.id();
-        assert!(new_record.save().is_ok());
 
         println!("Record id: {}", new_record.id());
+        assert!(new_record.save().is_ok());
 
         let record = app.get::<Record>(record_id);
 
+        println!("Record id: {}", record.as_ref().map(|r| r.id()).unwrap());
         assert!(record.is_ok());
-        println!("Record id: {}", record.unwrap().id());
-    });
+    }).unwrap();
 }
 
 #[test]
@@ -53,7 +53,7 @@ fn create_record() {
 
         assert!(save_result.is_ok());
         assert!(delete_result.is_ok());
-    });
+    }).unwrap();
 }
 
 #[test]
@@ -66,8 +66,8 @@ fn load_cls() {
 
         println!("Classification: {:?}", cls);
 
-        assert!(cls.is_ok());
-    });
+        assert!(false);
+    }).unwrap();
 }
 
 #[test]
@@ -81,10 +81,10 @@ fn load_classification_path() {
         println!("Classification name path: {:?}", cls);
 
         assert!(cls.is_ok());
-    });
+    }).unwrap();
 }
 
-//#[test]
+#[test]
 fn create_admin() {
     let mut c = App::new(Config);
     let u = unsafe { User::create_administrator(c, "Admin", "Admin1") };

@@ -50,8 +50,8 @@ impl App {
     }
 
     pub fn login<L, P>(&mut self, login: L, password: P) -> Result<(), LoadError>
-        where L: Into<String>,
-              P: Into<String>
+        where L: AsRef<str>,
+              P: AsRef<str>
     {
         Session::new(self.clone(), login, password).map(|s| {
                                                             (*self.0).borrow_mut().session = Some(s)
@@ -59,7 +59,7 @@ impl App {
     }
 
     pub fn connect_to_session<L>(&mut self, id: Uuid, login: L) -> Result<(), LoadError>
-        where L: Into<String>
+        where L: AsRef<str>
     {
         Session::establish(self.clone(), id, login).map(|s| {
                                                             (*self.0).borrow_mut().session = Some(s)

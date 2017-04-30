@@ -110,11 +110,11 @@ impl ToDto for Record {
 
     fn to_dto(&self) -> RecordDto {
         RecordDto {
-            id: self.id,
             fields: self.fields.iter().map(|x| x.to_dto()).collect(),
             classifications: self.classifications.iter().map(|x| x.to_dto()).collect(),
             files: self.files.iter().map(|x| x.to_dto()).collect(),
             system: SystemInfo {
+                id: self.id,
                 created_by: self.created_by.to_string(),
                 created_on: self.created_on.naive_utc(),
                 modified_by: self.modified_by.to_string(),
@@ -129,7 +129,7 @@ impl FromDto for Record {
 
     fn from_dto(dto: Self::Dto, app: App) -> Record {
         Record {
-            id: dto.id,
+            id: dto.system.id,
             fields: FieldCollection::from_iter(dto.fields
                                                   .into_iter()
                                                   .map(|x| RecordField::from_dto(x, app.clone())),

@@ -87,15 +87,10 @@ impl User {
         use models::pg::models::*;
         use models::pg::schema::users::dsl::*;
 
-        let mut sha3 = Keccak::new_sha3_256();
-        sha3.update(self.password.as_bytes());
-        let mut res = [0; 32];
-        sha3.finalize(&mut res);
-
         let new_user = NewUser {
             id: self.id,
             login: &self.login,
-            password: &*String::from_utf8_lossy(&res),
+            password: &get_sha3(self.password.as_str()),
             email: self.email.as_ref().map(|s| s.as_str()),
         };
 
@@ -122,7 +117,7 @@ impl User {
     }
 
     pub unsafe fn create_administrator<L, P>(mut app: App, login: L, password: P) -> Result<Uuid, UserError>
-        where L: Into<String>, P: Into<String>
+        where L: AsRef<str>, P: AsRef<str>
     {
         use diesel::types::Text;
 
@@ -131,13 +126,22 @@ impl User {
                       (uname: Text, passwd: Text) -> ::diesel::pg::types::sql_types::Uuid);
 
         let pg_conn = app.pg().connect();
-        ::diesel::select(create_admin(login.into(), password.into())).first::<Uuid>(&*pg_conn)
+        ::diesel::select(create_admin(login.as_ref(), get_sha3(password))).first::<Uuid>(&*pg_conn)
             .map_err(|e| match e {
                 Error::NotFound => UserError::NotFound,
                 Error::DatabaseError(_, er) => UserError::DatabaseError(er.message().to_owned()),
                 _ => UserError::UnexpectedError
             })
     }
+}
+
+fn get_sha3<S: AsRef<str>>(text: S) -> String {
+        let mut sha3 = Keccak::new_sha3_256();
+        sha3.update(text.as_ref().as_bytes());
+        let mut res = [0; 32];
+        sha3.finalize(&mut res);
+
+        String::from_utf8_lossy(&res).into_owned()
 }
 
 impl Load for User {

@@ -17,8 +17,8 @@ pub struct Session {
 
 impl Session {
     pub fn new<L, P>(mut app: App, login: L, password: P) -> Result<Self, LoadError>
-        where L: Into<String>,
-              P: Into<String>
+        where L: AsRef<str>,
+              P: AsRef<str>
     {
         use models::pg::schema::sessions::dsl::sessions;
 
@@ -27,7 +27,7 @@ impl Session {
                       (uname: Text, upasswd: Text) -> ::diesel::pg::types::sql_types::Uuid);
 
         let pg_conn = app.pg().connect();
-        exec_fn!(create_session(login.into(), password.into()), pg_conn)
+        exec_fn!(create_session(login.as_ref(), password.as_ref()), pg_conn)
             .and_then(|s: Uuid| sessions.find(s).first::<(Uuid, Uuid, String)>(&*pg_conn).map_err(|_| LoadError::NotFound))
             .map(|s| self::Session {
                 id: s.0,
@@ -38,11 +38,11 @@ impl Session {
     }
 
     pub fn establish<L>(mut app: App, sid: Uuid, ulogin: L) -> Result<Self, LoadError>
-        where L: Into<String>
+        where L: AsRef<str>
     {
         use models::pg::schema::sessions::dsl::*;
 
-        let log = ulogin.into();
+        let log = ulogin.as_ref();
         let pg_conn = app.pg().connect();
         sessions.find(sid).filter(login.eq(&log))
             .first::<(Uuid, Uuid, String)>(&*pg_conn)
