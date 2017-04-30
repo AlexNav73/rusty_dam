@@ -3,16 +3,16 @@ use diesel::prelude::*;
 use diesel::types::*;
 use uuid::Uuid;
 
-use std::cell::RefCell;
-
 use LoadError;
 use connection::App;
 
+const ADMIN_USER_GROUP: &'static str = "administrators";
+
 pub struct Session {
     id: Uuid,
-    user_id: RefCell<Option<Uuid>>,
-    login: RefCell<Option<String>>,
-    application: RefCell<App>,
+    user_id: Uuid,
+    login: String,
+    application: App,
 }
 
 impl Session {
@@ -20,69 +20,82 @@ impl Session {
         where L: Into<String>,
               P: Into<String>
     {
+        use models::pg::schema::sessions::dsl::sessions;
+
         sql_function!(create_session,
                       create_session_t,
                       (uname: Text, upasswd: Text) -> ::diesel::pg::types::sql_types::Uuid);
 
         let pg_conn = app.pg().connect();
-        exec_fn!(create_session(login.into(), password.into()), pg_conn).and_then(|s| {
-                                                                                      Ok(Session {
-                id: s,
-                user_id: RefCell::new(None),
-                login: RefCell::new(None),
-                application: RefCell::new(app)
+        exec_fn!(create_session(login.into(), password.into()), pg_conn)
+            .and_then(|s: Uuid| sessions.find(s).first::<(Uuid, Uuid, String)>(&*pg_conn).map_err(|_| LoadError::NotFound))
+            .map(|s| self::Session {
+                id: s.0,
+                user_id: s.1,
+                login: s.2,
+                application: app
             })
-                                                                                  })
     }
 
     pub fn establish<L>(mut app: App, sid: Uuid, ulogin: L) -> Result<Self, LoadError>
         where L: Into<String>
     {
-        use diesel::expression::exists;
         use models::pg::schema::sessions::dsl::*;
 
         let log = ulogin.into();
         let pg_conn = app.pg().connect();
-        ::diesel::select(exists(sessions.find(sid).filter(login.eq(&log))))
-            .get_result(&*pg_conn)
+        sessions.find(sid).filter(login.eq(&log))
+            .first::<(Uuid, Uuid, String)>(&*pg_conn)
             .map_err(|_| LoadError::NotFound)
-            .and_then(|session_exists| if session_exists {
-                          Ok(Session {
-                                 id: sid,
-                                 user_id: RefCell::new(None),
-                                 login: RefCell::new(Some(log)),
-                                 application: RefCell::new(app),
-                             })
-                      } else {
-                          Err(LoadError::NotFound)
-                      })
+            .map(|s| Session {
+                id: s.0,
+                user_id: s.1,
+                login: s.2,
+                application: app,
+            })
     }
 
     pub fn id(&self) -> &Uuid {
         &self.id
     }
 
-    pub fn login(&self) -> String {
-        use models::pg::schema::sessions::dsl::*;
-        use models::pg::models::Session;
+    pub fn login(&self) -> &str {
+        &self.login
+    }
 
-        if self.user_id.borrow().is_none() || self.login.borrow().is_none() {
-            let mut app = self.application.borrow_mut();
-            let pg_conn = app.pg().connect();
+    pub fn admin(mut app: App) -> Result<Self, LoadError> {
+        use diesel::pg::expression::dsl::all;
+        use diesel::associations::HasTable;
+        use models::pg::schema::users::dsl::{users, id, login};
+        use models::pg::schema::user_group::dsl::{user_group, name};
+        use models::pg::schema::user2user_group::dsl::{user2user_group, user_id};
+        use models::pg::schema::sessions::dsl::sessions;
+        use models::pg::models::*;
 
-            let s = sessions
-                .find(self.id)
-                .first::<Session>(&*pg_conn)
-                .unwrap();
-            *self.user_id.borrow_mut() = Some(s.user_id);
-            *self.login.borrow_mut() = Some(s.login);
-        }
+        let pg_conn = app.pg().connect();
 
-        self.login
-            .borrow()
-            .as_ref()
-            .map(|e| e.clone())
-            .unwrap()
+        let admin_users_id = user_group::table()
+            .inner_join(user2user_group::table())
+            .filter(name.eq(ADMIN_USER_GROUP))
+            .select(user_id);
+        let u = users.find(all(admin_users_id)).select((id, login))
+            .first::<(Uuid, String)>(&*pg_conn)
+            .map_err(|_| LoadError::NotFound)?;
+
+        let s = Session {
+            user_id: u.0,
+            login: u.1
+        };
+
+        ::diesel::insert(&s).into(sessions::table())
+            .get_result::<(Uuid, Uuid, String)>(&*pg_conn)
+            .map(|e| self::Session {
+                id: e.0,
+                user_id: e.1,
+                login: e.2,
+                application: app
+            })
+            .map_err(|_| LoadError::NotFound)
     }
 }
 
@@ -92,8 +105,7 @@ impl Drop for Session {
                       delete_session_t,
                       (sid: ::diesel::pg::types::sql_types::Uuid) -> Bool);
 
-        let mut app = self.application.borrow_mut();
-        let pg_conn = app.pg().connect();
+        let pg_conn = self.application.pg().connect();
         let _res: bool = exec_fn!(delete_session(self.id), pg_conn).unwrap();
     }
 }

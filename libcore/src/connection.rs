@@ -81,4 +81,26 @@ impl App {
     pub fn get<T: Load>(&self, id: Uuid) -> Result<T, LoadError> {
         T::load(self.clone(), id)
     }
+
+    #[allow(unused_variables)]
+    pub fn as_admin<F, T>(&mut self, func: F) -> Result<T, LoadError>
+        where F: FnOnce(App) -> T
+    {
+        use std::mem::replace;
+
+        let admin_session = Session::admin(self.clone()).ok();
+        let old = replace(&mut self.0.borrow_mut().session, admin_session);
+
+        let res = if self.0.borrow().session.is_some() {
+            Ok(func(self.clone()))
+        } else {
+            Err(LoadError::ImpersonationFailed)
+        };
+
+        // NOTE: Result of this `replace` call MUST be assigned to variable
+        // (it can't be ignored or renamed to `_`) because it will cause
+        // calling `drop` on the session while it borrowed for replacing
+        let admin_session = replace(&mut self.0.borrow_mut().session, old);
+        res
+    }
 }

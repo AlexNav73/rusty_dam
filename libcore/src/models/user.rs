@@ -1,5 +1,6 @@
 
 use diesel::prelude::*;
+use diesel::result::Error;
 use uuid::Uuid;
 use crypto::Keccak;
 
@@ -120,7 +121,7 @@ impl User {
             .map_err(|_| LoadError::NotFound)
     }
 
-    pub unsafe fn create_administrator<L, P>(mut app: App, login: L, password: P) -> Result<Uuid, LoadError>
+    pub unsafe fn create_administrator<L, P>(mut app: App, login: L, password: P) -> Result<Uuid, UserError>
         where L: Into<String>, P: Into<String>
     {
         use diesel::types::Text;
@@ -130,7 +131,12 @@ impl User {
                       (uname: Text, passwd: Text) -> ::diesel::pg::types::sql_types::Uuid);
 
         let pg_conn = app.pg().connect();
-        exec_fn!(create_admin(login.into(), password.into()), pg_conn)
+        ::diesel::select(create_admin(login.into(), password.into())).first::<Uuid>(&*pg_conn)
+            .map_err(|e| match e {
+                Error::NotFound => UserError::NotFound,
+                Error::DatabaseError(_, er) => UserError::DatabaseError(er.message().to_owned()),
+                _ => UserError::UnexpectedError
+            })
     }
 }
 
@@ -160,4 +166,11 @@ impl Load for User {
                    })
             })
     }
+}
+
+#[derive(Debug)]
+pub enum UserError {
+    NotFound,
+    UnexpectedError,
+    DatabaseError(String)
 }

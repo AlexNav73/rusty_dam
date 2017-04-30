@@ -30,6 +30,7 @@ use std::fmt;
 pub use uuid::Uuid;
 pub use connection::App;
 pub use models::record::Record;
+pub use models::user::User;
 pub use models::classification::Classification;
 pub use configuration::Configuration;
 
@@ -62,6 +63,7 @@ pub enum LoadError {
     ParentNotExists,
     RootCls,
     Unauthorized,
+    ImpersonationFailed,
 }
 
 impl fmt::Display for LoadError {
@@ -71,6 +73,7 @@ impl fmt::Display for LoadError {
             &LoadError::ParentNotExists => write!(f, "Parent classification doesn't exists"),
             &LoadError::RootCls => write!(f, "Can't create root classification"),
             &LoadError::Unauthorized => write!(f, "Unauthorized access to DAM"),
+            &LoadError::ImpersonationFailed => write!(f, "Unable to login as admin"),
         }
     }
 }

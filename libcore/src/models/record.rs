@@ -36,10 +36,7 @@ impl Record {
             return Err(LoadError::Unauthorized);
         }
 
-        let mut login = String::new();
-        if let Some(ref s) = *app.session() {
-            login = s.login();
-        }
+        let login = app.session().as_ref().map(|s| s.login().to_owned()).unwrap();
 
         Ok(Record {
                id: Uuid::new_v4(),
