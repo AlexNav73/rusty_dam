@@ -112,11 +112,11 @@ impl ToDto for Record {
         let files = to_dto_collection(&mut *self.files.borrow_mut());
 
         RecordDto {
+            id: self.id,
             fields: to_dto_collection(&mut *self.fields.borrow_mut()),
             classifications: classifications,
             files: files,
             system: SystemInfo {
-                id: self.id,
                 created_by: self.created_by.to_string(),
                 created_on: self.created_on.naive_utc(),
                 modified_by: self.modified_by.to_string(),
@@ -138,7 +138,7 @@ impl FromDto for Record {
 
     fn from_dto(dto: Self::Dto, app: App) -> Record {
         Record {
-            id: dto.system.id,
+            id: dto.id,
             fields: RefCell::new(FieldCollection::from_iter(dto.fields
                                                                .into_iter()
                                                                .map(|x| RecordField::from_dto(x, app.clone())),

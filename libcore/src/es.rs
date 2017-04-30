@@ -78,7 +78,6 @@ pub enum EsError {
 
 #[derive(Serialize, Deserialize)]
 pub struct SystemInfo {
-    pub id: Uuid,
     pub created_by: String,
     pub created_on: NaiveDateTime,
     pub modified_by: String,

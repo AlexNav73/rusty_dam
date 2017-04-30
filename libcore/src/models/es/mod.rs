@@ -26,6 +26,8 @@ pub struct FileDto {
 
 #[derive(Serialize, Deserialize)]
 pub struct RecordDto {
+    #[serde(skip_serializing)]
+    pub id: Uuid,
     pub fields: Vec<FieldDto>,
     pub classifications: Vec<ClassificationDto>,
     pub files: Vec<FileDto>,
@@ -38,6 +40,6 @@ impl EsDto for RecordDto {
     }
 
     fn id(&self) -> Uuid {
-        self.system.id
+        self.id
     }
 }
