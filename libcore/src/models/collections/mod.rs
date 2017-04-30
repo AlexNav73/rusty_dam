@@ -1,7 +1,7 @@
 
 use uuid::Uuid;
 
-use std::collections::hash_map::{Keys, ValuesMut};
+use std::collections::hash_map::{Keys, Values};
 
 use {ToDto, FromDto};
 use connection::App;
@@ -14,7 +14,7 @@ pub trait EntityCollection<T>
     where T: ToDto + FromDto
 {
     fn ids(&self) -> Ids<T>;
-    fn iter_mut(&mut self) -> IterMut<T>;
+    fn iter(&self) -> Iter<T>;
 }
 
 pub struct Ids<'a, T>
@@ -37,24 +37,24 @@ impl<'a, T: ToDto + FromDto + 'a> Iterator for Ids<'a, T> {
     }
 }
 
-pub struct IterMut<'a, T>
+pub struct Iter<'a, T>
     where T: ToDto + FromDto + 'a
 {
-    inner: ValuesMut<'a, Uuid, T>,
+    inner: Values<'a, Uuid, T>,
     application: App,
 }
 
-impl<'a, T: ToDto + FromDto + 'a> IterMut<'a, T> {
-    pub fn new(app: App, iter: ValuesMut<Uuid, T>) -> IterMut<T> {
-        IterMut {
+impl<'a, T: ToDto + FromDto + 'a> Iter<'a, T> {
+    pub fn new(app: App, iter: Values<Uuid, T>) -> Iter<T> {
+        Iter {
             inner: iter,
             application: app,
         }
     }
 }
 
-impl<'a, T: ToDto + FromDto + 'a> Iterator for IterMut<'a, T> {
-    type Item = &'a mut T;
+impl<'a, T: ToDto + FromDto + 'a> Iterator for Iter<'a, T> {
+    type Item = &'a T;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.inner.next()

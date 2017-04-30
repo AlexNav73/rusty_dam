@@ -4,7 +4,7 @@ use uuid::Uuid;
 use std::collections::HashMap;
 
 use Entity;
-use models::collections::{EntityCollection, Ids, IterMut};
+use models::collections::{EntityCollection, Ids, Iter};
 use models::field::RecordField;
 use connection::App;
 
@@ -36,7 +36,7 @@ impl EntityCollection<RecordField> for FieldCollection {
         Ids::new(self.fields.keys())
     }
 
-    fn iter_mut(&mut self) -> IterMut<RecordField> {
-        IterMut::new(self.application.clone(), self.fields.values_mut())
+    fn iter(&self) -> Iter<RecordField> {
+        Iter::new(self.application.clone(), self.fields.values())
     }
 }

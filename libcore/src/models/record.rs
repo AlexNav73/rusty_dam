@@ -2,8 +2,6 @@
 use uuid::Uuid;
 use chrono::{DateTime, UTC};
 
-use std::cell::RefCell;
-
 use {Load, LoadError, Entity, ToDto, FromDto};
 use es::SystemInfo;
 use connection::App;
@@ -19,9 +17,9 @@ use models::collections::classifications::ClassificationCollection;
 
 pub struct Record {
     id: Uuid,
-    fields: RefCell<FieldCollection>,
-    classifications: RefCell<ClassificationCollection>,
-    files: RefCell<FileCollection>,
+    fields: FieldCollection,
+    classifications: ClassificationCollection,
+    files: FileCollection,
     created_by: String,
     created_on: DateTime<UTC>,
     modified_by: String,
@@ -36,13 +34,16 @@ impl Record {
             return Err(LoadError::Unauthorized);
         }
 
-        let login = app.session().as_ref().map(|s| s.login().to_owned()).unwrap();
+        let login = app.session()
+            .as_ref()
+            .map(|s| s.login().to_owned())
+            .unwrap();
 
         Ok(Record {
                id: Uuid::new_v4(),
-               fields: RefCell::new(FieldCollection::new(app.clone())),
-               classifications: RefCell::new(ClassificationCollection::new(app.clone())),
-               files: RefCell::new(FileCollection::new(app.clone())),
+               fields: FieldCollection::new(app.clone()),
+               classifications: ClassificationCollection::new(app.clone()),
+               files: FileCollection::new(app.clone()),
                created_on: UTC::now(),
                modified_on: UTC::now(),
                created_by: login.clone(),
@@ -108,14 +109,11 @@ impl ToDto for Record {
     type Dto = RecordDto;
 
     fn to_dto(&self) -> RecordDto {
-        let classifications = to_dto_collection(&mut *self.classifications.borrow_mut());
-        let files = to_dto_collection(&mut *self.files.borrow_mut());
-
         RecordDto {
             id: self.id,
-            fields: to_dto_collection(&mut *self.fields.borrow_mut()),
-            classifications: classifications,
-            files: files,
+            fields: self.fields.iter().map(|x| x.to_dto()).collect(),
+            classifications: self.classifications.iter().map(|x| x.to_dto()).collect(),
+            files: self.files.iter().map(|x| x.to_dto()).collect(),
             system: SystemInfo {
                 created_by: self.created_by.to_string(),
                 created_on: self.created_on.naive_utc(),
@@ -126,32 +124,24 @@ impl ToDto for Record {
     }
 }
 
-fn to_dto_collection<T, C>(collection: &mut C) -> Vec<<T as ToDto>::Dto>
-    where C: EntityCollection<T>,
-          T: ToDto + FromDto
-{
-    collection.iter_mut().map(|x| x.to_dto()).collect()
-}
-
 impl FromDto for Record {
     type Dto = RecordDto;
 
     fn from_dto(dto: Self::Dto, app: App) -> Record {
         Record {
             id: dto.id,
-            fields: RefCell::new(FieldCollection::from_iter(dto.fields
-                                                               .into_iter()
-                                                               .map(|x| RecordField::from_dto(x, app.clone())),
-                                                            app.clone())),
-            classifications:
-                RefCell::new(ClassificationCollection::from_iter(dto.classifications
+            fields: FieldCollection::from_iter(dto.fields
+                                                  .into_iter()
+                                                  .map(|x| RecordField::from_dto(x, app.clone())),
+                                               app.clone()),
+            classifications: ClassificationCollection::from_iter(dto.classifications
                                                                     .into_iter()
                                                                     .map(|x| RecordClassification::from_dto(x, app.clone())),
-                                                                 app.clone())),
-            files: RefCell::new(FileCollection::from_iter(dto.files
-                                                             .into_iter()
-                                                             .map(|x| File::from_dto(x, app.clone())),
-                                                          app.clone())),
+                                                                 app.clone()),
+            files: FileCollection::from_iter(dto.files
+                                                .into_iter()
+                                                .map(|x| File::from_dto(x, app.clone())),
+                                             app.clone()),
             created_by: dto.system.created_by.to_string(),
             created_on: DateTime::from_utc(dto.system.created_on, UTC),
             modified_by: dto.system.modified_by.to_string(),

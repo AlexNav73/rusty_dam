@@ -4,7 +4,7 @@ use uuid::Uuid;
 use std::collections::HashMap;
 
 use Entity;
-use models::collections::{EntityCollection, Ids, IterMut};
+use models::collections::{EntityCollection, Ids, Iter};
 use models::file::File;
 use connection::App;
 
@@ -45,7 +45,7 @@ impl EntityCollection<File> for FileCollection {
         Ids::new(self.files.keys())
     }
 
-    fn iter_mut(&mut self) -> IterMut<File> {
-        IterMut::new(self.application.clone(), self.files.values_mut())
+    fn iter(&self) -> Iter<File> {
+        Iter::new(self.application.clone(), self.files.values())
     }
 }

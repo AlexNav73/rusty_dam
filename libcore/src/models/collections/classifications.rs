@@ -5,7 +5,7 @@ use std::collections::HashMap;
 
 use Entity;
 use models::classification::RecordClassification;
-use models::collections::{EntityCollection, Ids, IterMut};
+use models::collections::{EntityCollection, Ids, Iter};
 use connection::App;
 
 pub struct ClassificationCollection {
@@ -36,7 +36,7 @@ impl EntityCollection<RecordClassification> for ClassificationCollection {
         Ids::new(self.classifications.keys())
     }
 
-    fn iter_mut(&mut self) -> IterMut<RecordClassification> {
-        IterMut::new(self.application.clone(), self.classifications.values_mut())
+    fn iter(&self) -> Iter<RecordClassification> {
+        Iter::new(self.application.clone(), self.classifications.values())
     }
 }
