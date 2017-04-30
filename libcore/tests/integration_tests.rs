@@ -66,7 +66,7 @@ fn load_cls() {
 
         println!("Classification: {:?}", cls);
 
-        assert!(false);
+        assert!(cls.is_ok());
     }).unwrap();
 }
 
