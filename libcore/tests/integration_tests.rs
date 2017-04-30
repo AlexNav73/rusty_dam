@@ -22,13 +22,6 @@ impl Configuration for Config {
 #[test]
 //#[should_panic]
 fn get_record() {
-    // 112a5b66-c708-4e2a-afbb-b3c600b7ec91
-    // 2579847b-cb9c-4126-bffe-d7879df1198d
-    // 08af83ca-62f4-44d2-9610-9a8e0c99f488
-    // 838037c3-5928-4aa3-af87-ad29915cdf24
-    // c8edb8a0-7f4c-49d2-8d9e-f785ec0856a3
-    // 858e5f21-2802-4272-af6a-e4557a8fc999
-    // da0d2d48-5d6e-4476-bb0e-82213d387e98
     let mut c = App::new(Config);
     c.as_admin(|app| {
         let mut new_record = Record::new(app.clone()).unwrap();
