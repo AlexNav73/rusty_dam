@@ -41,6 +41,8 @@ pub trait Entity {
     fn id(&self) -> Uuid;
 }
 
+pub trait Definition {}
+
 pub trait ToDto {
     type Dto: Serialize + Deserialize;
 
@@ -55,6 +57,10 @@ pub trait FromDto {
 
 pub trait Load: Sized {
     fn load(c: App, id: Uuid) -> Result<Self, LoadError>;
+}
+
+pub trait IntoEntity<T: Definition>: Sized {
+    fn into(self, app: App) -> Result<T, LoadError>;
 }
 
 #[derive(Debug)]

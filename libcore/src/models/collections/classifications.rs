@@ -21,6 +21,10 @@ impl ClassificationCollection {
         }
     }
 
+    pub fn add(&mut self, cls: RecordClassification) {
+        self.classifications.insert(cls.id(), cls);
+    }
+
     pub fn from_iter<'a, T>(iter: T, app: App) -> ClassificationCollection
         where T: IntoIterator<Item = RecordClassification>
     {

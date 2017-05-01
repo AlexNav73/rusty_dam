@@ -31,7 +31,6 @@ impl Field {
     }
 
     pub fn add_to_field_group(&mut self, fg_id: Uuid) -> Result<(), LoadError> {
-        use diesel::expression::exists;
         use models::pg::models::*;
         use models::pg::schema::field_groups::dsl::*;
         use models::pg::schema::field2field_groups::dsl as f2fg;
@@ -42,23 +41,19 @@ impl Field {
         }
 
         let pg_conn = self.application.pg().connect();
-        let fg_exists = ::diesel::select(exists(field_groups.find(fg_id)))
-            .get_result::<bool>(&*pg_conn);
-
-        match fg_exists {
-            Ok(r) if r == true => {
+        field_groups.find(fg_id).select(id)
+            .first::<Uuid>(&*pg_conn)
+            .and_then(|fid| {
                 let m2m = Field2FieldGroup {
                     field_id: self.id,
-                    field_group_id: fg_id,
+                    field_group_id: fid,
                 };
                 ::diesel::insert(&m2m)
                     .into(f2fg::field2field_groups::table())
                     .execute(&*pg_conn)
-                    .map(|_| ())
-                    .map_err(|_| LoadError::NotFound)
-            }
-            _ => Ok(()),
-        }
+            })
+            .map(|_| ())
+            .map_err(|_| LoadError::NotFound)
     }
 
     pub fn save(&mut self) -> Result<(), LoadError> {
@@ -151,6 +146,16 @@ pub struct RecordField {
 }
 
 impl RecordField {
+    pub fn empty(app: App, id: Uuid, name: String) -> RecordField {
+        RecordField {
+            id: id,
+            name: name,
+            value: FieldValue::Empty,
+            is_dirty: false,
+            application: app
+        }
+    }
+
     fn value(&self) -> &FieldValue {
         &self.value
     }

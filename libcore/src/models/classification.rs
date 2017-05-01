@@ -4,7 +4,8 @@ use uuid::Uuid;
 
 use std::fmt;
 
-use {Entity, ToDto, FromDto, Load, LoadError};
+use {Definition, IntoEntity, Entity, ToDto, FromDto, Load, LoadError};
+use models::field::RecordField;
 use models::es::ClassificationDto;
 use models::pg::ClassificationNamePath;
 use models::pg::schema::classifications::dsl::*;
@@ -151,6 +152,10 @@ impl Classification {
         use models::pg::schema::classification2field_groups::dsl::*;
         use models::pg::schema::field_groups::dsl::*;
 
+        if self.application.session().is_none() {
+            return Err(LoadError::Unauthorized);
+        }
+
         if !self.is_new {
             let pg_conn = self.application.pg().connect(); 
 
@@ -167,6 +172,37 @@ impl Classification {
                 .map_err(|_| LoadError::NotFound)
         } else {
             self.save_new().and_then(|_| self.add_field_group(fg_id))
+        }
+    }
+
+    pub fn get_fields(&mut self) -> Result<Vec<RecordField>, LoadError> {
+        use diesel::associations::HasTable;
+        use models::pg::schema::classification2field_groups::dsl::*;
+        use models::pg::schema::field2field_groups::dsl::{field2field_groups, field_group_id as fgid};
+        use models::pg::schema::fields::dsl::{fields, id as fid, name};
+
+        if self.application.session().is_none() {
+            return Err(LoadError::Unauthorized);
+        }
+
+        if !self.is_new {
+            let pg_conn = self.application.pg().connect();
+
+            let cls_fg_ids = classification2field_groups
+                .filter(classification_id.eq(self.id))
+                .select(field_group_id);
+
+            field2field_groups::table()
+                .inner_join(fields::table())
+                .filter(fgid.eq_any(cls_fg_ids))
+                .select((fid, name))
+                .load::<(Uuid, String)>(&*pg_conn)
+                .map(|s| s.into_iter()
+                     .map(|f| RecordField::empty(self.application.clone(), f.0, f.1))
+                     .collect())
+                .map_err(|_| LoadError::NotFound)
+        } else {
+            self.save_new().and_then(|_| self.get_fields())
         }
     }
 
@@ -209,6 +245,31 @@ impl Load for Classification {
     }
 }
 
+impl Definition for Classification {}
+
+impl IntoEntity<Classification> for Classification {
+    fn into(self, _app: App) -> Result<Classification, LoadError> {
+        Ok(self)
+    }
+}
+
+impl IntoEntity<Classification> for Uuid {
+    fn into(self, app: App) -> Result<Classification, LoadError> {
+        Classification::load(app, self)
+    }
+}
+
+impl IntoEntity<Classification> for String {
+    fn into(self, mut app: App) -> Result<Classification, LoadError> {
+        use models::pg::ClassificationNamePath;
+
+        self.parse::<ClassificationNamePath>()
+            .map_err(|_| LoadError::NotFound)
+            .and_then(|path| path.into_uuid(app.pg().connect()))
+            .and_then(|cid| Classification::load(app, cid))
+    }
+}
+
 impl fmt::Debug for Classification {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         f.debug_struct("Classification")
@@ -224,6 +285,17 @@ pub struct RecordClassification {
     parent_id: Option<Uuid>,
     name_path: ClassificationNamePath,
     application: App,
+}
+
+impl From<Classification> for RecordClassification {
+    fn from(cls: Classification) -> Self {
+        RecordClassification {
+            id: cls.id,
+            parent_id: cls.parent_id,
+            name_path: cls.name_path,
+            application: cls.application
+        }
+    }
 }
 
 impl Entity for RecordClassification {

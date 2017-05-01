@@ -27,6 +27,15 @@ impl ClassificationNamePath {
             .and_then(|p| Ok(ClassificationNamePath { path: p }))
     }
 
+    pub fn into_uuid(self, pg_conn: PgClientConnection) -> Result<Uuid, LoadError> {
+        sql_function!(get_id_by_path,
+                      get_id_by_path_t,
+                      (cls_id: Array<Text>) -> Nullable<sql_types::Uuid>);
+
+        exec_fn!(get_id_by_path(self.path), pg_conn)
+            .and_then(|id: Option<Uuid>| id.ok_or(LoadError::NotFound))
+    }
+
     pub fn name(&self) -> &str {
         self.path[self.path.len() - 1].as_str()
     }

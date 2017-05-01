@@ -2,14 +2,14 @@
 use uuid::Uuid;
 use chrono::{DateTime, UTC};
 
-use {Load, LoadError, Entity, ToDto, FromDto};
+use {IntoEntity, Load, LoadError, Entity, ToDto, FromDto};
 use es::SystemInfo;
 use connection::App;
 
 use models::es::RecordDto;
 use models::file::File;
 use models::field::RecordField;
-use models::classification::RecordClassification;
+use models::classification::{Classification, RecordClassification};
 use models::collections::EntityCollection;
 use models::collections::fields::FieldCollection;
 use models::collections::files::FileCollection;
@@ -97,6 +97,19 @@ impl Record {
             .es()
             .index(&dto)
             .map_err(|_| LoadError::NotFound)
+    }
+
+    pub fn classify_as<T>(&mut self, cls: T) -> Result<(), LoadError>
+        where T: IntoEntity<Classification>
+    {
+        if self.application.session().is_none() {
+            return Err(LoadError::Unauthorized);
+        }
+
+        let mut classification = cls.into(self.application.clone())?;
+        classification.get_fields()
+            .map(|r| for f in r { self.fields.add(f) })
+            .map(|_| self.classifications.add(RecordClassification::from(classification)))
     }
 }
 

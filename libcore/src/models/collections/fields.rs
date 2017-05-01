@@ -21,6 +21,12 @@ impl FieldCollection {
         }
     }
 
+    pub fn add(&mut self, field: RecordField) {
+        if !self.fields.contains_key(&field.id()) {
+            self.fields.insert(field.id(), field);
+        }
+    }
+
     pub fn from_iter<'a, T>(iter: T, app: App) -> Self
         where T: IntoIterator<Item = RecordField>
     {
