@@ -3,7 +3,8 @@ use uuid::Uuid;
 
 use super::schema::*;
 
-#[derive(Debug, Queryable)]
+#[derive(Debug)]
+#[derive(Identifiable, Queryable, Associations)]
 pub struct Classification {
     pub id: Uuid,
     pub parent_id: Option<Uuid>,
@@ -23,6 +24,15 @@ pub struct NewClassification<'a> {
     pub id: Uuid,
     pub parent_id: Option<Uuid>,
     pub name: &'a str,
+}
+
+#[derive(Insertable, Queryable, Associations)]
+#[belongs_to(Classification)]
+#[belongs_to(FieldGroup)]
+#[table_name="classification2field_groups"]
+pub struct Classification2FieldGroup {
+    pub classification_id: Uuid,
+    pub field_group_id: Uuid,
 }
 
 #[derive(Debug, Identifiable, Queryable, Associations)]

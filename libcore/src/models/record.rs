@@ -70,6 +70,7 @@ impl Record {
         }
 
         if self.is_new {
+            self.is_new = false;
             let dto = self.to_dto();
             self.application
                 .es()

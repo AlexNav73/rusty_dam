@@ -90,6 +90,7 @@ impl Field {
         use diesel::associations::HasTable;
         use models::pg::models::*;
 
+        self.is_new = false;
         let new_field = NewField {
             id: self.id,
             name: self.name.as_str(),

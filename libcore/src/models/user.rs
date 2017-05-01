@@ -87,6 +87,7 @@ impl User {
         use models::pg::models::*;
         use models::pg::schema::users::dsl::*;
 
+        self.is_new = false;
         let new_user = NewUser {
             id: self.id,
             login: &self.login,

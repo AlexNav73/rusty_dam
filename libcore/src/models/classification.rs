@@ -20,6 +20,36 @@ pub struct Classification {
 }
 
 impl Classification {
+    pub fn new<N: Into<ClassificationNamePath>>(mut app: App,
+                                                name_path: N)
+                                                -> Result<Self, LoadError> {
+        use models::pg::models::Classification as CLS;
+
+        if app.session().is_none() {
+            return Err(LoadError::Unauthorized);
+        }
+
+        let name_path = name_path.into();
+        let parent_cls = {
+            let parent = name_path.parent().ok_or(LoadError::RootCls)?;
+            let pg_conn = app.pg().connect();
+
+            classifications
+                .filter(name.eq(parent.name()))
+                .first::<CLS>(&*pg_conn)
+                .map_err(|_| LoadError::ParentNotExists)?
+        };
+
+        Ok(Classification {
+               id: Uuid::new_v4(),
+               parent_id: Some(parent_cls.id),
+               name_path: name_path,
+               is_new: true,
+               is_dirty: false,
+               application: app,
+           })
+    }   
+
     pub fn save(&mut self) -> Result<(), LoadError> {
         if self.application.session().is_none() {
             return Err(LoadError::Unauthorized);
@@ -68,6 +98,7 @@ impl Classification {
         use diesel::associations::HasTable;
         use models::pg::models::*;
 
+        self.is_new = false;
         let new_cls = NewClassification {
             id: self.id,
             parent_id: self.parent_id,
@@ -114,6 +145,31 @@ impl Classification {
         self.is_dirty = true;
     }
 
+    pub fn add_field_group(&mut self, fg_id: Uuid) -> Result<(), LoadError> {
+        use diesel::associations::HasTable;
+        use models::pg::models::{FieldGroup, Classification2FieldGroup};
+        use models::pg::schema::classification2field_groups::dsl::*;
+        use models::pg::schema::field_groups::dsl::*;
+
+        if !self.is_new {
+            let pg_conn = self.application.pg().connect(); 
+
+            field_groups.find(fg_id).first::<FieldGroup>(&*pg_conn)
+                .map(|fg| Classification2FieldGroup {
+                    classification_id: self.id,
+                    field_group_id: fg.id
+                })
+                .and_then(|m2m| {
+                    ::diesel::insert(&m2m).into(classification2field_groups::table())
+                        .execute(&*pg_conn)
+                })
+                .map(|_| ())
+                .map_err(|_| LoadError::NotFound)
+        } else {
+            self.save_new().and_then(|_| self.add_field_group(fg_id))
+        }
+    }
+
     pub fn delete(mut self) -> Result<(), LoadError> {
         if self.application.session().is_none() {
             return Err(LoadError::Unauthorized);
@@ -124,36 +180,6 @@ impl Classification {
             .execute(&*pg_conn)
             .map(|_| ())
             .map_err(|_| LoadError::NotFound)
-    }
-
-    pub fn new<N: Into<ClassificationNamePath>>(mut app: App,
-                                                name_path: N)
-                                                -> Result<Self, LoadError> {
-        use models::pg::models::Classification as CLS;
-
-        if app.session().is_none() {
-            return Err(LoadError::Unauthorized);
-        }
-
-        let name_path = name_path.into();
-        let parent_cls = {
-            let parent = name_path.parent().ok_or(LoadError::RootCls)?;
-            let pg_conn = app.pg().connect();
-
-            classifications
-                .filter(name.eq(parent.name()))
-                .first::<CLS>(&*pg_conn)
-                .map_err(|_| LoadError::ParentNotExists)?
-        };
-
-        Ok(Classification {
-               id: Uuid::new_v4(),
-               parent_id: Some(parent_cls.id),
-               name_path: name_path,
-               is_new: true,
-               is_dirty: false,
-               application: app,
-           })
     }
 }
 
