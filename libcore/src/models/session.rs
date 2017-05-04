@@ -64,7 +64,6 @@ impl Session {
     }
 
     pub fn admin(mut app: App) -> Result<Self, LoadError> {
-        use diesel::pg::expression::dsl::all;
         use diesel::associations::HasTable;
         use models::pg::schema::users::dsl::{users, id, login};
         use models::pg::schema::user_group::dsl::{user_group, name};
@@ -78,7 +77,7 @@ impl Session {
             .inner_join(user2user_group::table())
             .filter(name.eq(ADMIN_USER_GROUP))
             .select(user_id);
-        let u = users.find(all(admin_users_id)).select((id, login))
+        let u = users.filter(id.eq_any(admin_users_id)).select((id, login))
             .first::<(Uuid, String)>(&*pg_conn)
             .map_err(|_| LoadError::NotFound)?;
 
