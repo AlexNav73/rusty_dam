@@ -5,34 +5,34 @@ use es::{SystemInfo, EsDto};
 use models::field::FieldValue;
 
 #[derive(Serialize, Deserialize)]
-pub struct ClassificationDto {
+pub struct ClassificationDto<'a> {
     pub id: Uuid,
     pub parent_id: Option<Uuid>,
-    pub name_path: String,
+    pub name_path: &'a str,
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct FieldDto {
+pub struct FieldDto<'a> {
     pub id: Uuid,
-    pub name: String,
+    pub name: &'a str,
     pub value: FieldValue,
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct FileDto {
+pub struct FileDto<'a> {
     pub id: Uuid,
-    pub full_file_path: String,
+    pub full_file_path: &'a str,
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct RecordDto {
-    pub fields: Vec<FieldDto>,
-    pub classifications: Vec<ClassificationDto>,
-    pub files: Vec<FileDto>,
+pub struct RecordDto<'a> {
+    pub fields: Vec<FieldDto<'a>>,
+    pub classifications: Vec<ClassificationDto<'a>>,
+    pub files: Vec<FileDto<'a>>,
     pub system: SystemInfo,
 }
 
-impl EsDto for RecordDto {
+impl<'a> EsDto<'a> for RecordDto<'a> {
     fn doc_type() -> &'static str {
         "records"
     }

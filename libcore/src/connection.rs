@@ -12,14 +12,14 @@ use pg::PgService;
 use configuration::Configuration;
 use models::session::Session;
 
-struct Connection {
-    session: Option<Session>,
+struct Connection<'c> {
+    session: Option<Session<'c>>,
     es_service: EsService,
     pg_service: PgService,
 }
 
-impl Connection {
-    fn new<C: Configuration>(config: C) -> Connection {
+impl<'c> Connection<'c> {
+    fn new<C: Configuration>(config: C) -> Self {
         dotenv().ok();
 
         // TODO: Move to config
@@ -42,10 +42,10 @@ impl Connection {
 }
 
 #[derive(Clone)]
-pub struct App(Rc<RefCell<Connection>>);
+pub struct App<'a>(Rc<RefCell<Connection<'a>>>);
 
-impl App {
-    pub fn new<C: Configuration>(config: C) -> App {
+impl<'a> App<'a> {
+    pub fn new<C: Configuration>(config: C) -> App<'a> {
         App(Rc::new(RefCell::new(Connection::new(config))))
     }
 
@@ -53,28 +53,25 @@ impl App {
         where L: AsRef<str>,
               P: AsRef<str>
     {
-        Session::new(self.clone(), login, password).map(|s| {
-                                                            (*self.0).borrow_mut().session = Some(s)
-                                                        })
+        Session::new(self.clone(), login, password)
+            .map(|s| (*self.0).borrow_mut().session = Some(s))
     }
 
-    pub fn connect_to_session<L>(&mut self, id: Uuid, login: L) -> Result<(), LoadError>
-        where L: AsRef<str>
+    pub fn connect_to_session<L>(&mut self, id: Uuid) -> Result<(), LoadError>
     {
-        Session::establish(self.clone(), id, login).map(|s| {
-                                                            (*self.0).borrow_mut().session = Some(s)
-                                                        })
+        Session::establish(self.clone(), id)
+            .map(|s| (*self.0).borrow_mut().session = Some(s))
     }
 
-    pub fn es<'a>(&'a mut self) -> RefMut<'a, EsService> {
+    pub fn es<'b>(&'b mut self) -> RefMut<'b, EsService> {
         RefMut::map((*self.0).borrow_mut(), |e| e.es())
     }
 
-    pub fn pg<'a>(&'a mut self) -> RefMut<'a, PgService> {
+    pub fn pg<'b>(&'b mut self) -> RefMut<'b, PgService> {
         RefMut::map((*self.0).borrow_mut(), |e| e.pg())
     }
 
-    pub fn session<'a>(&'a self) -> Ref<'a, Option<Session>> {
+    pub fn session<'b>(&'b self) -> Ref<'b, Option<Session<'a>>> {
         Ref::map((*self.0).borrow(), |e| &e.session)
     }
 

@@ -7,18 +7,18 @@ use crypto::Keccak;
 use {Load, LoadError};
 use connection::App;
 
-pub struct User {
+pub struct User<'a> {
     id: Uuid,
     login: String,
     password: String,
     email: Option<String>,
     is_new: bool,
     is_dirty: (bool, bool, bool),
-    application: App,
+    application: App<'a>,
 }
 
-impl User {
-    pub fn new<L, P, E>(app: App, login: L, password: P, email: Option<E>) -> Result<User, LoadError>
+impl<'a> User<'a> {
+    pub fn new<L, P, E>(app: App, login: L, password: P, email: Option<E>) -> Result<Self, LoadError>
         where L: Into<String>,
               P: Into<String>,
               E: Into<String>
@@ -145,7 +145,7 @@ fn get_sha3<S: AsRef<str>>(text: S) -> String {
         String::from_utf8_lossy(&res).into_owned()
 }
 
-impl Load for User {
+impl<'a> Load for User<'a> {
     fn load(mut app: App, uid: Uuid) -> Result<Self, LoadError> {
         use models::pg::schema::users::dsl::*;
         use models::pg::models::*;

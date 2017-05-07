@@ -14,7 +14,7 @@ use rs_es::operations::search::{SearchHitsResult, SearchResult};
 use FromDto;
 use connection::App;
 
-pub trait EsDto: Serialize + Deserialize {
+pub trait EsDto<'a>: Serialize + Deserialize<'a> {
     fn doc_type() -> &'static str;
     fn id(&self) -> Uuid;
 }
@@ -26,14 +26,14 @@ struct EsClient {
 
 impl EsClient {
     #[inline]
-    fn new(url: String, index: String) -> Result<EsClient, EsError> {
+    fn new(url: String, index: String) -> Result<Self, EsError> {
         Ok(EsClient {
                index: index,
                client: Client::new(&url).map_err(|_| EsError::InvalidUrl)?,
            })
     }
 
-    fn index<'a, 'b, T: EsDto>(&'a mut self, doc: &'b T) -> Result<IndexResult, error::EsError> {
+    fn index<'a, 'b, 'c, T: EsDto<'c>>(&'a mut self, doc: &'b T) -> Result<IndexResult, error::EsError> {
         self.client
             .index(&self.index, T::doc_type())
             .with_doc(doc)
@@ -41,7 +41,7 @@ impl EsClient {
             .send()
     }
 
-    fn delete<'a, 'b, T: EsDto>(&'a mut self, id: Uuid) -> Result<DeleteResult, error::EsError> {
+    fn delete<'a, 'b, T: EsDto<'b>>(&'a mut self, id: Uuid) -> Result<DeleteResult, error::EsError> {
         self.client
             .delete(&self.index,
                     T::doc_type(),
@@ -49,14 +49,14 @@ impl EsClient {
             .send()
     }
 
-    fn get<'a, 'b, T: EsDto>(&'a mut self, id: Uuid) -> Result<GetResult<T>, error::EsError> {
+    fn get<'a, 'b, T: EsDto<'b>>(&'a mut self, id: Uuid) -> Result<GetResult<T>, error::EsError> {
         self.client
             .get(&self.index, id.hyphenated().to_string().as_str())
             .with_doc_type(T::doc_type())
             .send()
     }
 
-    fn search<'a, 'b, T: EsDto>(&'a mut self,
+    fn search<'a, 'b, 'c, T: EsDto<'c>>(&'a mut self,
                                 q: &'b Query)
                                 -> Result<SearchResult<T>, error::EsError> {
         self.client
@@ -90,20 +90,20 @@ struct EsRepository {
 }
 
 impl EsRepository {
-    fn new(url: String, index: String) -> EsRepository {
+    fn new(url: String, index: String) -> Self {
         EsRepository {
             client: EsClient::new(url, index).expect("Unable to connect to elasticsearch"),
         }
     }
 
-    fn get<T: EsDto>(&mut self, id: Uuid) -> Result<T, EsError> {
+    fn get<'a, T: EsDto<'a>>(&mut self, id: Uuid) -> Result<T, EsError> {
         match self.client.get::<T>(id) {
             Ok(GetResult { source: Some(doc), .. }) => Ok(doc),
             _ => Err(EsError::NotFound),
         }
     }
 
-    fn search<T: EsDto>(&mut self, query: Query) -> Result<Vec<Box<T>>, EsError> {
+    fn search<'a, T: EsDto<'a>>(&mut self, query: Query) -> Result<Vec<Box<T>>, EsError> {
         match self.client.search::<T>(&query) {
             Ok(SearchResult { hits: SearchHitsResult { hits: mut result, .. }, .. }) => {
                 let docs = result
@@ -118,7 +118,7 @@ impl EsRepository {
         }
     }
 
-    fn index<T: EsDto>(&mut self, item: &T) -> Result<(), EsError> {
+    fn index<'a, T: EsDto<'a>>(&mut self, item: &T) -> Result<(), EsError> {
         match self.client.index(item) {
             Ok(IndexResult { created, .. }) if created => Ok(()),
             Ok(IndexResult { created, .. }) if !created => Err(EsError::CreationFailed),
@@ -127,7 +127,7 @@ impl EsRepository {
         }
     }
 
-    fn delete<T: EsDto>(&mut self, id: Uuid) -> Result<(), EsError> {
+    fn delete<'a, T: EsDto<'a>>(&mut self, id: Uuid) -> Result<(), EsError> {
         match self.client.delete::<T>(id) {
             Ok(DeleteResult { found, .. }) if found => Ok(()),
             Ok(DeleteResult { found, .. }) if !found => Err(EsError::NotFound),
@@ -142,22 +142,22 @@ pub struct EsService {
 }
 
 impl EsService {
-    pub fn new(url: String, index: String) -> EsService {
+    pub fn new(url: String, index: String) -> Self {
         EsService { client: EsRepository::new(url, index) }
     }
 
-    pub fn get<D: EsDto, T: FromDto<Dto = D>>(&mut self, app: App, id: Uuid) -> Result<T, EsError> {
+    pub fn get<'a, D: EsDto<'a>, T: FromDto<'a, Dto = D>>(&mut self, app: App, id: Uuid) -> Result<T, EsError> {
         self.client
             .get::<D>(id)
             .map_err(|_| EsError::NotFound)
             .and_then(|d| Ok(T::from_dto(d, app)))
     }
 
-    pub fn index<T: EsDto>(&mut self, item: &T) -> Result<(), EsError> {
+    pub fn index<'a, T: EsDto<'a>>(&mut self, item: &T) -> Result<(), EsError> {
         self.client.index(item)
     }
 
-    pub fn delete<T: EsDto>(&mut self, id: Uuid) -> Result<(), EsError> {
+    pub fn delete<'a, T: EsDto<'a>>(&mut self, id: Uuid) -> Result<(), EsError> {
         self.client.delete::<T>(id)
     }
 }

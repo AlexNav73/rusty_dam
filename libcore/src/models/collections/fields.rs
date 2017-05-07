@@ -8,13 +8,13 @@ use models::collections::{EntityCollection, Ids, Iter};
 use models::field::RecordField;
 use connection::App;
 
-pub struct FieldCollection {
-    fields: HashMap<Uuid, RecordField>,
-    application: App,
+pub struct FieldCollection<'a> {
+    fields: HashMap<Uuid, RecordField<'a>>,
+    application: App<'a>,
 }
 
-impl FieldCollection {
-    pub fn new(app: App) -> FieldCollection {
+impl<'a> FieldCollection<'a> {
+    pub fn new(app: App) -> Self {
         FieldCollection {
             fields: HashMap::new(),
             application: app,
@@ -27,8 +27,8 @@ impl FieldCollection {
         }
     }
 
-    pub fn from_iter<'a, T>(iter: T, app: App) -> Self
-        where T: IntoIterator<Item = RecordField>
+    pub fn from_iter<T>(iter: T, app: App) -> Self
+        where T: IntoIterator<Item=RecordField<'a>>
     {
         FieldCollection {
             fields: iter.into_iter().map(|f| (f.id(), f)).collect(),
@@ -37,12 +37,12 @@ impl FieldCollection {
     }
 }
 
-impl EntityCollection<RecordField> for FieldCollection {
-    fn ids(&self) -> Ids<RecordField> {
+impl<'a, 'b> EntityCollection<'a, 'b, RecordField<'a>> for FieldCollection<'a> {
+    fn ids(&self) -> Ids<'a, 'b, RecordField<'a>> {
         Ids::new(self.fields.keys())
     }
 
-    fn iter(&self) -> Iter<RecordField> {
+    fn iter(&self) -> Iter<'a, 'b, RecordField<'a>> {
         Iter::new(self.application.clone(), self.fields.values())
     }
 }

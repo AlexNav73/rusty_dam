@@ -8,13 +8,13 @@ use models::classification::RecordClassification;
 use models::collections::{EntityCollection, Ids, Iter};
 use connection::App;
 
-pub struct ClassificationCollection {
-    classifications: HashMap<Uuid, RecordClassification>,
-    application: App,
+pub struct ClassificationCollection<'a> {
+    classifications: HashMap<Uuid, RecordClassification<'a>>,
+    application: App<'a>,
 }
 
-impl ClassificationCollection {
-    pub fn new(app: App) -> ClassificationCollection {
+impl<'a> ClassificationCollection<'a> {
+    pub fn new(app: App) -> Self {
         ClassificationCollection {
             classifications: HashMap::new(),
             application: app,
@@ -25,8 +25,8 @@ impl ClassificationCollection {
         self.classifications.insert(cls.id(), cls);
     }
 
-    pub fn from_iter<'a, T>(iter: T, app: App) -> ClassificationCollection
-        where T: IntoIterator<Item = RecordClassification>
+    pub fn from_iter<T>(iter: T, app: App) -> ClassificationCollection
+        where T: IntoIterator<Item=RecordClassification<'a>>
     {
         ClassificationCollection {
             classifications: iter.into_iter().map(|c| (c.id(), c)).collect(),
@@ -35,12 +35,12 @@ impl ClassificationCollection {
     }
 }
 
-impl EntityCollection<RecordClassification> for ClassificationCollection {
-    fn ids(&self) -> Ids<RecordClassification> {
+impl<'a, 'b> EntityCollection<'a, 'b, RecordClassification<'a>> for ClassificationCollection<'a> {
+    fn ids(&self) -> Ids<'a, 'b, RecordClassification<'a>> {
         Ids::new(self.classifications.keys())
     }
 
-    fn iter(&self) -> Iter<RecordClassification> {
+    fn iter(&self) -> Iter<'a, 'b, RecordClassification<'a>> {
         Iter::new(self.application.clone(), self.classifications.values())
     }
 }

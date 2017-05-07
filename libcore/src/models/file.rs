@@ -7,13 +7,13 @@ use {Entity, ToDto, FromDto};
 use models::es::FileDto;
 use connection::App;
 
-pub struct File {
+pub struct File<'a> {
     id: Uuid,
     path: PathBuf,
-    application: App,
+    application: App<'a>,
 }
 
-impl File {
+impl<'a> File<'a> {
     pub fn new<P: Into<PathBuf>>(app: App, path: P) -> Self {
         File {
             id: Uuid::new_v4(),
@@ -32,16 +32,16 @@ impl File {
     }
 }
 
-impl Entity for File {
+impl<'a> Entity for File<'a> {
     fn id(&self) -> Uuid {
         self.id
     }
 }
 
-impl ToDto for File {
-    type Dto = FileDto;
+impl<'a> ToDto<'a> for File<'a> {
+    type Dto = FileDto<'a>;
 
-    fn to_dto(&self) -> FileDto {
+    fn to_dto(&self) -> Self::Dto {
         FileDto {
             id: self.id,
             full_file_path: self.path
@@ -52,10 +52,10 @@ impl ToDto for File {
     }
 }
 
-impl FromDto for File {
-    type Dto = FileDto;
+impl<'a, 'b> FromDto<'a> for File<'b> {
+    type Dto = FileDto<'a>;
 
-    fn from_dto(dto: Self::Dto, app: App) -> File {
+    fn from_dto(dto: Self::Dto, app: App) -> Self {
         File {
             id: dto.id,
             path: Path::new(dto.full_file_path.as_str()).to_path_buf(),

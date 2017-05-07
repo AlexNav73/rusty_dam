@@ -11,16 +11,16 @@ use models::pg::ClassificationNamePath;
 use models::pg::schema::classifications::dsl::*;
 use connection::App;
 
-pub struct Classification {
+pub struct Classification<'a> {
     id: Uuid,
     parent_id: Option<Uuid>,
     name_path: ClassificationNamePath,
     is_new: bool,
     is_dirty: bool,
-    application: App,
+    application: App<'a>,
 }
 
-impl Classification {
+impl<'a> Classification<'a> {
     pub fn new<N: Into<ClassificationNamePath>>(mut app: App,
                                                 name_path: N)
                                                 -> Result<Self, LoadError> {
@@ -219,7 +219,7 @@ impl Classification {
     }
 }
 
-impl Load for Classification {
+impl<'a> Load for Classification<'a> {
     fn load(mut app: App, cls_id: Uuid) -> Result<Self, LoadError> {
         use models::pg::models::*;
 
@@ -245,22 +245,22 @@ impl Load for Classification {
     }
 }
 
-impl Definition for Classification {}
+impl<'a> Definition for Classification<'a> {}
 
-impl IntoEntity<Classification> for Classification {
-    fn into(self, _app: App) -> Result<Classification, LoadError> {
+impl<'a> IntoEntity<Classification<'a>> for Classification<'a> {
+    fn into(self, _app: App) -> Result<Self, LoadError> {
         Ok(self)
     }
 }
 
-impl IntoEntity<Classification> for Uuid {
-    fn into(self, app: App) -> Result<Classification, LoadError> {
+impl<'a> IntoEntity<Classification<'a>> for Uuid {
+    fn into(self, app: App) -> Result<Classification<'a>, LoadError> {
         Classification::load(app, self)
     }
 }
 
-impl IntoEntity<Classification> for String {
-    fn into(self, mut app: App) -> Result<Classification, LoadError> {
+impl<'a> IntoEntity<Classification<'a>> for String {
+    fn into(self, mut app: App) -> Result<Classification<'a>, LoadError> {
         use models::pg::ClassificationNamePath;
 
         self.parse::<ClassificationNamePath>()
@@ -270,7 +270,7 @@ impl IntoEntity<Classification> for String {
     }
 }
 
-impl fmt::Debug for Classification {
+impl<'a> fmt::Debug for Classification<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         f.debug_struct("Classification")
             .field("id", &self.id)
@@ -280,14 +280,14 @@ impl fmt::Debug for Classification {
     }
 }
 
-pub struct RecordClassification {
+pub struct RecordClassification<'a> {
     id: Uuid,
     parent_id: Option<Uuid>,
     name_path: ClassificationNamePath,
-    application: App,
+    application: App<'a>,
 }
 
-impl From<Classification> for RecordClassification {
+impl<'a, 'b> From<Classification<'a>> for RecordClassification<'b> {
     fn from(cls: Classification) -> Self {
         RecordClassification {
             id: cls.id,
@@ -298,16 +298,16 @@ impl From<Classification> for RecordClassification {
     }
 }
 
-impl Entity for RecordClassification {
+impl<'a> Entity for RecordClassification<'a> {
     fn id(&self) -> Uuid {
         self.id
     }
 }
 
-impl ToDto for RecordClassification {
-    type Dto = ClassificationDto;
+impl<'a> ToDto<'a> for RecordClassification<'a> {
+    type Dto = ClassificationDto<'a>;
 
-    fn to_dto(&self) -> ClassificationDto {
+    fn to_dto(&self) -> Self::Dto {
         ClassificationDto {
             id: self.id,
             parent_id: self.parent_id,
@@ -316,10 +316,10 @@ impl ToDto for RecordClassification {
     }
 }
 
-impl FromDto for RecordClassification {
-    type Dto = ClassificationDto;
+impl<'a, 'b> FromDto<'a> for RecordClassification<'b> {
+    type Dto = ClassificationDto<'a>;
 
-    fn from_dto(dto: Self::Dto, app: App) -> RecordClassification {
+    fn from_dto(dto: Self::Dto, app: App) -> Self {
         RecordClassification {
             id: dto.id,
             parent_id: dto.parent_id,

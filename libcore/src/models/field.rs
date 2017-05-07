@@ -7,15 +7,15 @@ use models::es::FieldDto;
 use models::pg::schema::fields::dsl;
 use connection::App;
 
-pub struct Field {
+pub struct Field<'a> {
     id: Uuid,
     name: String,
     is_new: bool,
     is_dirty: bool,
-    application: App,
+    application: App<'a>,
 }
 
-impl Field {
+impl<'a> Field<'a> {
     pub fn new<S: Into<String>>(app: App, fname: S) -> Result<Self, LoadError> {
         if app.session().is_none() {
             return Err(LoadError::Unauthorized);
@@ -112,7 +112,7 @@ impl Field {
     }
 }
 
-impl Load for Field {
+impl<'a> Load for Field<'a> {
     fn load(mut app: App, fid: Uuid) -> Result<Self, LoadError> {
         use models::pg::models::*;
 
@@ -137,16 +137,16 @@ impl Load for Field {
     }
 }
 
-pub struct RecordField {
+pub struct RecordField<'a> {
     id: Uuid,
     name: String,
     value: FieldValue,
     is_dirty: bool,
-    application: App,
+    application: App<'a>,
 }
 
-impl RecordField {
-    pub fn empty(app: App, id: Uuid, name: String) -> RecordField {
+impl<'a> RecordField<'a> {
+    pub fn empty(app: App, id: Uuid, name: String) -> Self {
         RecordField {
             id: id,
             name: name,
@@ -166,16 +166,16 @@ impl RecordField {
     }
 }
 
-impl Entity for RecordField {
+impl<'a> Entity for RecordField<'a> {
     fn id(&self) -> Uuid {
         self.id
     }
 }
 
-impl ToDto for RecordField {
-    type Dto = FieldDto;
+impl<'a> ToDto<'a> for RecordField<'a> {
+    type Dto = FieldDto<'a>;
 
-    fn to_dto(&self) -> FieldDto {
+    fn to_dto(&self) -> Self::Dto {
         FieldDto {
             id: self.id,
             name: self.name.clone(),
@@ -184,8 +184,8 @@ impl ToDto for RecordField {
     }
 }
 
-impl FromDto for RecordField {
-    type Dto = FieldDto;
+impl<'a, 'b> FromDto<'a> for RecordField<'b> {
+    type Dto = FieldDto<'a>;
 
     fn from_dto(dto: Self::Dto, app: App) -> Self {
         RecordField {

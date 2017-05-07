@@ -43,14 +43,14 @@ pub trait Entity {
 
 pub trait Definition {}
 
-pub trait ToDto {
-    type Dto: Serialize + Deserialize;
+pub trait ToDto<'a> {
+    type Dto: Serialize + 'a;
 
     fn to_dto(&self) -> Self::Dto;
 }
 
-pub trait FromDto {
-    type Dto: Serialize + Deserialize;
+pub trait FromDto<'a> {
+    type Dto: Deserialize<'a>;
 
     fn from_dto(dto: Self::Dto, app: App) -> Self;
 }

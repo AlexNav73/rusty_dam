@@ -15,20 +15,20 @@ use models::collections::fields::FieldCollection;
 use models::collections::files::FileCollection;
 use models::collections::classifications::ClassificationCollection;
 
-pub struct Record {
+pub struct Record<'a> {
     id: Uuid,
-    fields: FieldCollection,
-    classifications: ClassificationCollection,
-    files: FileCollection,
+    fields: FieldCollection<'a>,
+    classifications: ClassificationCollection<'a>,
+    files: FileCollection<'a>,
     created_by: String,
     created_on: DateTime<UTC>,
     modified_by: String,
     modified_on: DateTime<UTC>,
     is_new: bool,
-    application: App,
+    application: App<'a>,
 }
 
-impl Record {
+impl<'a> Record<'a> {
     pub fn new(app: App) -> Result<Record, LoadError> {
         if app.session().is_none() {
             return Err(LoadError::Unauthorized);
@@ -99,8 +99,12 @@ impl Record {
             .map_err(|_| LoadError::NotFound)
     }
 
+    pub fn fields(&self) -> &FieldCollection {
+        &self.fields
+    }
+
     pub fn classify_as<T>(&mut self, cls: T) -> Result<(), LoadError>
-        where T: IntoEntity<Classification>
+        where T: IntoEntity<Classification<'a>>
     {
         if self.application.session().is_none() {
             return Err(LoadError::Unauthorized);
@@ -113,16 +117,16 @@ impl Record {
     }
 }
 
-impl Entity for Record {
+impl<'a> Entity for Record<'a> {
     fn id(&self) -> Uuid {
         self.id
     }
 }
 
-impl ToDto for Record {
-    type Dto = RecordDto;
+impl<'a> ToDto<'a> for Record<'a> {
+    type Dto = RecordDto<'a>;
 
-    fn to_dto(&self) -> RecordDto {
+    fn to_dto(&self) -> Self::Dto {
         RecordDto {
             fields: self.fields.iter().map(|x| x.to_dto()).collect(),
             classifications: self.classifications.iter().map(|x| x.to_dto()).collect(),
@@ -138,10 +142,10 @@ impl ToDto for Record {
     }
 }
 
-impl FromDto for Record {
-    type Dto = RecordDto;
+impl<'a, 'b> FromDto<'a> for Record<'b> {
+    type Dto = RecordDto<'a>;
 
-    fn from_dto(dto: Self::Dto, app: App) -> Record {
+    fn from_dto(dto: Self::Dto, app: App) -> Record<'b> {
         Record {
             id: dto.system.id,
             fields: FieldCollection::from_iter(dto.fields
@@ -166,7 +170,7 @@ impl FromDto for Record {
     }
 }
 
-impl Load for Record {
+impl<'a> Load for Record<'a> {
     fn load(mut app: App, id: Uuid) -> Result<Self, LoadError> {
         if app.session().is_none() {
             return Err(LoadError::Unauthorized);

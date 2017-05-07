@@ -19,7 +19,7 @@ impl Configuration for Config {
     }
 }
 
-#[test]
+//#[test]
 //#[should_panic]
 fn get_record() {
     let mut c = App::new(Config);
@@ -37,7 +37,7 @@ fn get_record() {
     }).unwrap();
 }
 
-#[test]
+//#[test]
 //#[should_panic]
 fn create_record() {
     let mut c = App::new(Config);
@@ -57,6 +57,26 @@ fn create_record() {
 }
 
 #[test]
+fn assign_classification_to_record() {
+    let mut c = App::new(Config);
+    c.as_admin(|app| {
+        let mut record = Record::new(app.clone()).unwrap();
+        let cls = app.get::<Classification>(Uuid::parse_str("025399e4-3484-4ade-9edb-cd0feb2a19a6").unwrap()).unwrap();
+        record.classify_as(cls);
+        let save_result = record.save();
+
+        println!("Saved: {:?}", save_result);
+        println!("Record: {}", record.id());
+
+        //let delete_result = record.delete();
+        //println!("Deleted: {:?}", delete_result);
+
+        assert!(save_result.is_ok());
+        //assert!(delete_result.is_ok());
+    }).unwrap();
+}
+
+//#[test]
 //#[should_panic]
 fn load_cls() {
     let mut c = App::new(Config);
@@ -70,7 +90,7 @@ fn load_cls() {
     }).unwrap();
 }
 
-#[test]
+//#[test]
 //#[should_panic]
 fn load_classification_path() {
     let mut c = App::new(Config);
@@ -84,7 +104,7 @@ fn load_classification_path() {
     }).unwrap();
 }
 
-#[test]
+//#[test]
 fn create_admin() {
     let mut c = App::new(Config);
     let u = unsafe { User::create_administrator(c, "Admin", "Admin1") };

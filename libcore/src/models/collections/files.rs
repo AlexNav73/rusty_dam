@@ -8,14 +8,14 @@ use models::collections::{EntityCollection, Ids, Iter};
 use models::file::File;
 use connection::App;
 
-pub struct FileCollection {
+pub struct FileCollection<'a> {
     latest: Option<Uuid>,
-    files: HashMap<Uuid, File>,
-    application: App,
+    files: HashMap<Uuid, File<'a>>,
+    application: App<'a>,
 }
 
-impl FileCollection {
-    pub fn new(app: App) -> FileCollection {
+impl<'a> FileCollection<'a> {
+    pub fn new(app: App) -> Self {
         FileCollection {
             latest: None,
             files: HashMap::new(),
@@ -23,8 +23,8 @@ impl FileCollection {
         }
     }
 
-    pub fn from_iter<'a, T>(iter: T, app: App) -> FileCollection
-        where T: IntoIterator<Item = File>
+    pub fn from_iter<T>(iter: T, app: App) -> FileCollection
+        where T: IntoIterator<Item=File<'a>>
     {
         FileCollection {
             latest: None,
@@ -40,12 +40,12 @@ impl FileCollection {
     // }
 }
 
-impl EntityCollection<File> for FileCollection {
-    fn ids(&self) -> Ids<File> {
+impl<'a, 'b> EntityCollection<'a, 'b, File<'a>> for FileCollection<'a> {
+    fn ids(&self) -> Ids<'a, 'b, File<'a>> {
         Ids::new(self.files.keys())
     }
 
-    fn iter(&self) -> Iter<File> {
+    fn iter(&self) -> Iter<'a, 'b, File<'a>> {
         Iter::new(self.application.clone(), self.files.values())
     }
 }

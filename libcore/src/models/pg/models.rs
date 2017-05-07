@@ -127,6 +127,5 @@ pub struct User2UserGroup {
 #[belongs_to(User, foreign_key="user_id")]
 #[table_name="sessions"]
 pub struct Session {
-    pub user_id: Uuid,
-    pub login: String,
+    pub user_id: Uuid
 }
