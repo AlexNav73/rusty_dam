@@ -1,0 +1,20 @@
+[package]
+name = "web_app"
+version = "0.1.0"
+authors = ["AlexNav73 <fifthhorseman@mail.ru>"]
+
+[dependencies]
+rocket = "*"
+rocket_codegen = "*"
+serde = "*"
+serde_derive = "*"
+serde_json = "*"
+uuid = "*"
+
+[dependencies.rocket_contrib]
+version = "*"
+default-features = false
+features = ["uuid", "tera_templates"]
+
+[dependencies.libcore]
+path = "../libcore"
