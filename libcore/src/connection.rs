@@ -74,6 +74,11 @@ impl App {
         RefMut::map((*self.0).borrow_mut(), |e| e.pg())
     }
 
+    pub fn session_id(&self) -> Option<Uuid> {
+        let this = self.0.borrow();
+        this.session.as_ref().map(|s| s.id().clone())
+    }
+
     pub fn session<'a>(&'a self) -> Ref<'a, Option<Session>> {
         Ref::map((*self.0).borrow(), |e| &e.session)
     }

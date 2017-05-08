@@ -10,14 +10,16 @@ extern crate rocket_contrib;
 extern crate uuid;
 extern crate libcore;
 
-mod controllers;
-
 use uuid::Uuid;
 use rocket::request::{self, FromRequest};
 use rocket::outcome::Outcome;
 use rocket::http::Status;
 use rocket::Request;
-use libcore::*;
+use libcore::{App, Configuration};
+
+mod controllers;
+
+use controllers::account::{ SESSION_KEY_NAME, SESSION_LOGIN_NAME };
 
 struct Config;
 
@@ -41,8 +43,8 @@ impl<'a, 'r> FromRequest<'a, 'r> for APIKey {
     type Error = ();
 
     fn from_request(request: &'a Request<'r>) -> request::Outcome<APIKey, ()> {
-        let session_key = request.cookies().find("rusty_key");
-        let session_login = request.cookies().find("rusty_login");
+        let session_key = request.cookies().find(SESSION_KEY_NAME);
+        let session_login = request.cookies().find(SESSION_LOGIN_NAME);
         if let Some(ref key) = session_key {
             if let Ok(session_id) = Uuid::parse_str(key.value()) {
                 let mut app = App::new(Config);

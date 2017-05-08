@@ -4,6 +4,7 @@ use diesel::types::*;
 use uuid::Uuid;
 
 use LoadError;
+use models::get_sha3;
 use connection::App;
 
 const ADMIN_USER_GROUP: &'static str = "administrators";
@@ -27,7 +28,8 @@ impl Session {
                       (uname: Text, upasswd: Text) -> ::diesel::pg::types::sql_types::Uuid);
 
         let pg_conn = app.pg().connect();
-        exec_fn!(create_session(login.as_ref(), password.as_ref()), pg_conn)
+        let pass = get_sha3(password);
+        exec_fn!(create_session(login.as_ref(), pass), pg_conn)
             .and_then(|s: Uuid| sessions.find(s).first::<(Uuid, Uuid, String)>(&*pg_conn).map_err(|_| LoadError::NotFound))
             .map(|s| self::Session {
                 id: s.0,

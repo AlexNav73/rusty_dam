@@ -2,11 +2,16 @@
 use rocket_contrib::Template;
 use rocket::response::Redirect;
 use rocket::request::Form;
+use rocket::http::{Cookie, Cookies};
 use rocket::Data;
+use libcore::{App, LoadError};
 
 use std::io::Write;
 
-use APIKey;
+use {APIKey, Config};
+
+pub const SESSION_KEY_NAME: &str = "rusty_key";
+pub const SESSION_LOGIN_NAME: &str = "rusty_login";
 
 #[derive(Serialize)]
 struct Content {
@@ -37,8 +42,20 @@ fn login() -> Template {
 }
 
 #[post("/login", data = "<cred>")]
-fn login_post(cred: Form<Credentials>) -> String {
-    format!("{:?}", cred.into_inner())
+fn login_post(cookies: &Cookies, cred: Form<Credentials>) -> Result<Redirect, LoadError> {
+    let cred = cred.into_inner();
+    if !cred.login.is_empty() || !cred.password.is_empty() {
+        let mut app = App::new(Config);
+        let sid = app.login(&cred.login, &cred.password)
+            .and_then(|_| Ok(app.session_id()))?
+            .unwrap();
+
+        cookies.add(Cookie::new(SESSION_KEY_NAME, sid.to_string()));
+        cookies.add(Cookie::new(SESSION_LOGIN_NAME, cred.login));
+        Ok(Redirect::to("/"))
+    } else {
+        Ok(Redirect::to("/login"))
+    }
 }
 
 #[get("/home")]
