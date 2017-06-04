@@ -53,17 +53,15 @@ impl App {
         where L: AsRef<str>,
               P: AsRef<str>
     {
-        Session::new(self.clone(), login, password).map(|s| {
-                                                            (*self.0).borrow_mut().session = Some(s)
-                                                        })
+        Session::new(self.clone(), login, password)
+            .map(|s| (*self.0).borrow_mut().session = Some(s))
     }
 
     pub fn connect_to_session<L>(&mut self, id: Uuid, login: L) -> Result<(), LoadError>
         where L: AsRef<str>
     {
-        Session::establish(self.clone(), id, login).map(|s| {
-                                                            (*self.0).borrow_mut().session = Some(s)
-                                                        })
+        Session::establish(self.clone(), id, login)
+            .map(|s| (*self.0).borrow_mut().session = Some(s))
     }
 
     pub fn es<'a>(&'a mut self) -> RefMut<'a, EsService> {

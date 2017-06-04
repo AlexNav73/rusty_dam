@@ -1,8 +1,32 @@
 <html>
     <head>
         <title> Index </title>
+        <link href="/styles/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+        <link href="/styles/login.css" rel="stylesheet">
+
+        <script src="/scripts/jquery-3.2.1.min.js"></script>
+        <script src="/styles/bootstrap/js/bootstrap.min.js"></script>
+
+        <!--Tree Views-->
+        <script src="/scripts/bootstrap-treeview.min.js"></script>
+        <script src="/scripts/jstree.min.js"></script>
+        <link rel="stylesheet" href="/scripts/themes/default/style.min.css" />
+        <!--End-->
+
+        <script src="/scripts/rusty-dam/ajax-utility.js"></script>
+        <script src="/scripts/rusty-dam/classification-tree.js"></script>
     </head>
     </body>
-        <h1> {{ message }} </h1>
+        <div id="tree">
+            <ul>
+                <li>Root node 1
+                    <ul>
+                        <li id="child_node_1">Child node 1</li>
+                        <li>Child node 2</li>
+                    </ul>
+                </li>
+                <li>Root node 2</li>
+            </ul>
+        </div>
     </body>
 </html>

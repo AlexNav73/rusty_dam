@@ -13,26 +13,15 @@ use {APIKey, Config};
 pub const SESSION_KEY_NAME: &str = "rusty_key";
 pub const SESSION_LOGIN_NAME: &str = "rusty_login";
 
-#[derive(Serialize)]
-struct Content {
-    message: String
-}
-
 #[derive(Debug, FromForm)]
 struct Credentials {
     login: String,
     password: String
 }
 
-#[get("/")]
-fn index(key: APIKey) -> Template {
-    let message = Content { message: "Hello".to_string() };
-    Template::render("templates/index", &message)
-}
-
-#[get("/", rank = 2)]
-fn index_anon() -> Redirect {
-    Redirect::to("/login")
+#[derive(Serialize)]
+struct Content {
+    message: String
 }
 
 #[get("/login")]
@@ -46,20 +35,22 @@ fn login_post(cookies: &Cookies, cred: Form<Credentials>) -> Result<Redirect, Lo
     let cred = cred.into_inner();
     if !cred.login.is_empty() || !cred.password.is_empty() {
         let mut app = App::new(Config);
-        let sid = app.login(&cred.login, &cred.password)
-            .and_then(|_| Ok(app.session_id()))?
-            .unwrap();
+        app.login(&cred.login, &cred.password)
+            .map(|_| app.session_id().unwrap())
+            .map(move |sid| {
+                let mut session = Cookie::new(SESSION_KEY_NAME, sid.to_string());
+                let mut username = Cookie::new(SESSION_LOGIN_NAME, cred.login);
 
-        cookies.add(Cookie::new(SESSION_KEY_NAME, sid.to_string()));
-        cookies.add(Cookie::new(SESSION_LOGIN_NAME, cred.login));
-        Ok(Redirect::to("/"))
+                session.set_path("/");
+                username.set_path("/");
+
+                cookies.add(session);
+                cookies.add(username);
+                Redirect::to("/")
+            })
+            .or(Ok(Redirect::to("/login")))
     } else {
         Ok(Redirect::to("/login"))
     }
-}
-
-#[get("/home")]
-fn home() -> &'static str {
-    "Home"
 }
 

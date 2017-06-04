@@ -64,11 +64,12 @@ impl<'a, 'r> FromRequest<'a, 'r> for APIKey {
 fn main() {
     rocket::ignite()
         .mount("/", routes![
-               controllers::account::index,
-               controllers::account::index_anon,
+               controllers::home::index,
+               controllers::home::index_anon,
+               controllers::static_files::all
+        ])
+        .mount("/security", routes![
                controllers::account::login,
                controllers::account::login_post,
-               controllers::account::home,
-               controllers::static_files::all
         ]).launch();
 }

@@ -70,6 +70,7 @@ pub enum LoadError {
     RootCls,
     Unauthorized,
     ImpersonationFailed,
+    SessionNotFound,
 }
 
 impl fmt::Display for LoadError {
@@ -80,6 +81,7 @@ impl fmt::Display for LoadError {
             &LoadError::RootCls => write!(f, "Can't create root classification"),
             &LoadError::Unauthorized => write!(f, "Unauthorized access to DAM"),
             &LoadError::ImpersonationFailed => write!(f, "Unable to login as admin"),
+            &LoadError::SessionNotFound => write!(f, "Unable to create session"),
         }
     }
 }
