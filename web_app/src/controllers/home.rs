@@ -1,14 +1,8 @@
 
 use rocket_contrib::Template;
 use rocket::response::Redirect;
-use rocket::request::Form;
-use rocket::http::{Cookie, Cookies};
-use rocket::Data;
-use libcore::{App, LoadError};
 
-use std::io::Write;
-
-use {APIKey, Config};
+use APIKey;
 
 #[derive(Serialize)]
 struct Content {
@@ -16,7 +10,7 @@ struct Content {
 }
 
 #[get("/")]
-fn index(key: APIKey) -> Template {
+fn index(_key: APIKey) -> Template {
     let message = Content { message: "Hello".to_string() };
     Template::render("templates/index", &message)
 }

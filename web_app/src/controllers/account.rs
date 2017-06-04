@@ -3,12 +3,9 @@ use rocket_contrib::Template;
 use rocket::response::Redirect;
 use rocket::request::Form;
 use rocket::http::{Cookie, Cookies};
-use rocket::Data;
 use libcore::{App, LoadError};
 
-use std::io::Write;
-
-use {APIKey, Config};
+use Config;
 
 pub const SESSION_KEY_NAME: &str = "rusty_key";
 pub const SESSION_LOGIN_NAME: &str = "rusty_login";

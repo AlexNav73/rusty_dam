@@ -71,5 +71,9 @@ fn main() {
         .mount("/security", routes![
                controllers::account::login,
                controllers::account::login_post,
+        ])
+        .mount("/classifications", routes![
+               controllers::classifications::get_root_classifications,
+               controllers::classifications::get_child_classifications
         ]).launch();
 }

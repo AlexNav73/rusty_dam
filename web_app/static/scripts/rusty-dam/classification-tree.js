@@ -1,40 +1,25 @@
 $(function() {
-    //function getTree() {
-        //var data = [
-            //{
-                //text: "Parent 1",
-                //nodes: [
-                    //{
-                        //text: "Child 1",
-                        //nodes: [
-                            //{
-                                //text: "Grandchild 1"
-                            //},
-                            //{
-                                //text: "Grandchild 2"
-                            //}
-                        //]
-                    //},
-                    //{
-                        //text: "Child 2"
-                    //}
-                //]
-            //},
-            //{
-                //text: "Parent 2"
-            //}
-        //];
-        //return data;
-    //}
-
-    //var ajaxHelper = new document.utility.ajax();
-    //$('#tree').treeview({
-        //data: getTree(),
-        //onNodeSelected: function(event, node) {
-            //console.log(node);
-            //ajaxHelper.getClassificationById(node.text);
-        //}
-    //});
-
-    $('#tree').jstree();
+    $('#tree').jstree({
+        core: {
+            data: {
+                url: function (node) {
+                    return node.id === '#' ?
+                        "/classifications/parents" :
+                        "/classifications/children";
+                },
+                data: function (node) {
+                    return {
+                        id: node.id === '#' ?
+                            "bd3363fb-0fe1-4628-a24f-fdda8ef06b20" :
+                            node.id
+                    };
+                }       
+            },
+            themes: {
+                name: "default-dark",
+                dots: false,
+                icons: true
+            }
+        }
+    });
 });

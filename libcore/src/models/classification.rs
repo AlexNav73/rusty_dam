@@ -217,6 +217,14 @@ impl Classification {
             .map(|_| ())
             .map_err(|_| LoadError::NotFound)
     }
+
+    pub fn name(&self) -> &str {
+        self.name_path.name()
+    }
+
+    pub fn id(&self) -> &Uuid {
+        &self.id
+    }
 }
 
 impl Load for Classification {

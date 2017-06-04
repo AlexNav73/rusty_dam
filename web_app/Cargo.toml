@@ -14,7 +14,7 @@ uuid = "*"
 [dependencies.rocket_contrib]
 version = "*"
 default-features = false
-features = ["uuid", "tera_templates"]
+features = ["uuid", "tera_templates", "json"]
 
 [dependencies.libcore]
 path = "../libcore"
