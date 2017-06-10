@@ -1,0 +1,40 @@
+
+.header {
+    width: 100%;
+    background-color: black;
+    display: inline-block;
+}
+
+.main-text {
+    font-size: 21px;
+    text-align: center;
+    color: #fff;
+    line-height: 62px;
+    font-family: 'Segoe UI Light', 'Calibri Light', 'Gill Sans Light';
+}
+
+.bordered {
+    border: 1px solid #97999B;
+}
+
+.main-pane {
+    height: 100%;
+}
+
+.navigation p {
+    font-size: 21px;
+    text-align: center;
+    color: #fff;
+    line-height: 60px;
+    font-family: 'Segoe UI Light', 'Calibri Light', 'Gill Sans Light';
+}
+
+#tree li {
+    background-color: black;
+}
+
+#tree .jstree-clicked {
+    background-color: black;
+    color: red;
+}
+
