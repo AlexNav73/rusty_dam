@@ -1,8 +1,6 @@
 
 .header {
-    width: 100%;
     background-color: black;
-    display: inline-block;
 }
 
 .main-text {
@@ -21,12 +19,8 @@
     height: 100%;
 }
 
-.navigation p {
-    font-size: 21px;
-    text-align: center;
-    color: #fff;
-    line-height: 60px;
-    font-family: 'Segoe UI Light', 'Calibri Light', 'Gill Sans Light';
+.browse-text {
+    padding-left: 20px;
 }
 
 #tree li {

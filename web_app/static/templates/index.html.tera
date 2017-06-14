@@ -15,7 +15,7 @@
         <script src="/scripts/rusty-dam/classification-tree.js"></script>
     </head>
     </body>
-        <div class="container header">
+        <div class="container-fluid">
             <div class="bordered row align-items-center">
                 <div class="bordered main-text col">Assets</div>
                 <div class="bordered col">
@@ -26,10 +26,15 @@
                     <img src="/icons/user.png" />
                 </div>
             </div>
+            <div class="bordered row main-text browse-text">
+                <div class="col align-self-start">
+                    Browse
+                </div>
+            </div>
             <div class="row main-pane justify-content-start">
                 <div class="bordered col">
                     <div class="navigation">
-                        <p>Classifications</p>
+                        <p class="main-text">Classifications</p>
                         <div id="tree"></div>
                     </div>
                 </div>
