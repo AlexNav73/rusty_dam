@@ -324,7 +324,7 @@ impl ToDto for RecordClassification {
     }
 }
 
-impl FromDto for RecordClassification {
+impl<'a> FromDto<'a> for RecordClassification {
     type Dto = ClassificationDto;
 
     fn from_dto(dto: Self::Dto, app: App) -> RecordClassification {

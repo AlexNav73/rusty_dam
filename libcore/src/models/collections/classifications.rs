@@ -35,12 +35,12 @@ impl ClassificationCollection {
     }
 }
 
-impl EntityCollection<RecordClassification> for ClassificationCollection {
-    fn ids(&self) -> Ids<RecordClassification> {
+impl<'a> EntityCollection<'a, RecordClassification> for ClassificationCollection {
+    fn ids<'b>(&'b self) -> Ids<'b, 'a, RecordClassification> {
         Ids::new(self.classifications.keys())
     }
 
-    fn iter(&self) -> Iter<RecordClassification> {
+    fn iter<'b>(&'b self) -> Iter<'b, 'a, RecordClassification> {
         Iter::new(self.application.clone(), self.classifications.values())
     }
 }

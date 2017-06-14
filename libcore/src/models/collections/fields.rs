@@ -37,12 +37,12 @@ impl FieldCollection {
     }
 }
 
-impl EntityCollection<RecordField> for FieldCollection {
-    fn ids(&self) -> Ids<RecordField> {
+impl<'a> EntityCollection<'a, RecordField> for FieldCollection {
+    fn ids<'b>(&'b self) -> Ids<'b, 'a, RecordField> {
         Ids::new(self.fields.keys())
     }
 
-    fn iter(&self) -> Iter<RecordField> {
+    fn iter<'b>(&'b self) -> Iter<'b, 'a, RecordField> {
         Iter::new(self.application.clone(), self.fields.values())
     }
 }

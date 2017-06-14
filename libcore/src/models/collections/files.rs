@@ -40,12 +40,12 @@ impl FileCollection {
     // }
 }
 
-impl EntityCollection<File> for FileCollection {
-    fn ids(&self) -> Ids<File> {
+impl<'a> EntityCollection<'a, File> for FileCollection {
+    fn ids<'b>(&'b self) -> Ids<'b, 'a, File> {
         Ids::new(self.files.keys())
     }
 
-    fn iter(&self) -> Iter<File> {
+    fn iter<'b>(&'b self) -> Iter<'b, 'a, File> {
         Iter::new(self.application.clone(), self.files.values())
     }
 }

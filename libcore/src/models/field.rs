@@ -184,7 +184,7 @@ impl ToDto for RecordField {
     }
 }
 
-impl FromDto for RecordField {
+impl<'a> FromDto<'a> for RecordField {
     type Dto = FieldDto;
 
     fn from_dto(dto: Self::Dto, app: App) -> Self {

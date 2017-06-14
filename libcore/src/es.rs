@@ -1,5 +1,6 @@
 
 use serde::{Serialize, Deserialize};
+use serde::de::DeserializeOwned;
 use chrono::naive::datetime::NaiveDateTime;
 use uuid::Uuid;
 
@@ -14,8 +15,11 @@ use rs_es::operations::search::{SearchHitsResult, SearchResult};
 use FromDto;
 use connection::App;
 
-pub trait EsDto: Serialize + Deserialize {
+pub trait EsDocument {
     fn doc_type() -> &'static str;
+}
+
+pub trait EsDto: Serialize {
     fn id(&self) -> Uuid;
 }
 
@@ -33,7 +37,9 @@ impl EsClient {
            })
     }
 
-    fn index<'a, 'b, T: EsDto>(&'a mut self, doc: &'b T) -> Result<IndexResult, error::EsError> {
+    fn index<'a, 'b, T>(&'a mut self, doc: &'b T) -> Result<IndexResult, error::EsError> 
+        where T: EsDto + EsDocument
+    {
         self.client
             .index(&self.index, T::doc_type())
             .with_doc(doc)
@@ -41,7 +47,9 @@ impl EsClient {
             .send()
     }
 
-    fn delete<'a, 'b, T: EsDto>(&'a mut self, id: Uuid) -> Result<DeleteResult, error::EsError> {
+    fn delete<'a, 'b, T>(&'a mut self, id: Uuid) -> Result<DeleteResult, error::EsError> 
+        where T: EsDto + EsDocument
+    {
         self.client
             .delete(&self.index,
                     T::doc_type(),
@@ -49,16 +57,18 @@ impl EsClient {
             .send()
     }
 
-    fn get<'a, 'b, T: EsDto>(&'a mut self, id: Uuid) -> Result<GetResult<T>, error::EsError> {
+    fn get<'a, 'b, T>(&'a mut self, id: Uuid) -> Result<GetResult<T>, error::EsError> 
+        where T: DeserializeOwned + EsDocument
+    {
         self.client
             .get(&self.index, id.hyphenated().to_string().as_str())
             .with_doc_type(T::doc_type())
             .send()
     }
 
-    fn search<'a, 'b, T: EsDto>(&'a mut self,
-                                q: &'b Query)
-                                -> Result<SearchResult<T>, error::EsError> {
+    fn search<'a, 'b, T>(&'a mut self, q: &'b Query) -> Result<SearchResult<T>, error::EsError> 
+        where T: DeserializeOwned + EsDocument
+    {
         self.client
             .search_query()
             .with_indexes(&[&self.index])
@@ -96,14 +106,18 @@ impl EsRepository {
         }
     }
 
-    fn get<T: EsDto>(&mut self, id: Uuid) -> Result<T, EsError> {
+    fn get<'a, T>(&'a mut self, id: Uuid) -> Result<T, EsError> 
+        where T: DeserializeOwned + EsDocument
+    {
         match self.client.get::<T>(id) {
             Ok(GetResult { source: Some(doc), .. }) => Ok(doc),
             _ => Err(EsError::NotFound),
         }
     }
 
-    fn search<T: EsDto>(&mut self, query: Query) -> Result<Vec<Box<T>>, EsError> {
+    fn search<'a, T>(&'a mut self, query: Query) -> Result<Vec<Box<T>>, EsError> 
+        where T: DeserializeOwned + EsDocument
+    {
         match self.client.search::<T>(&query) {
             Ok(SearchResult { hits: SearchHitsResult { hits: mut result, .. }, .. }) => {
                 let docs = result
@@ -118,7 +132,9 @@ impl EsRepository {
         }
     }
 
-    fn index<T: EsDto>(&mut self, item: &T) -> Result<(), EsError> {
+    fn index<T>(&mut self, item: &T) -> Result<(), EsError> 
+        where T: EsDto + EsDocument
+    {
         match self.client.index(item) {
             Ok(IndexResult { created, .. }) if created => Ok(()),
             Ok(IndexResult { created, .. }) if !created => Err(EsError::CreationFailed),
@@ -127,7 +143,9 @@ impl EsRepository {
         }
     }
 
-    fn delete<T: EsDto>(&mut self, id: Uuid) -> Result<(), EsError> {
+    fn delete<T>(&mut self, id: Uuid) -> Result<(), EsError> 
+        where T: EsDto + EsDocument
+    {
         match self.client.delete::<T>(id) {
             Ok(DeleteResult { found, .. }) if found => Ok(()),
             Ok(DeleteResult { found, .. }) if !found => Err(EsError::NotFound),
@@ -146,18 +164,25 @@ impl EsService {
         EsService { client: EsRepository::new(url, index) }
     }
 
-    pub fn get<D: EsDto, T: FromDto<Dto = D>>(&mut self, app: App, id: Uuid) -> Result<T, EsError> {
+    pub fn get<'a, D, T>(&'a mut self, app: App, id: Uuid) -> Result<T, EsError> 
+        where D: DeserializeOwned + EsDocument,
+              T: FromDto<'a, Dto=D>
+    {
         self.client
             .get::<D>(id)
             .map_err(|_| EsError::NotFound)
             .and_then(|d| Ok(T::from_dto(d, app)))
     }
 
-    pub fn index<T: EsDto>(&mut self, item: &T) -> Result<(), EsError> {
+    pub fn index<T>(&mut self, item: &T) -> Result<(), EsError> 
+        where T: EsDto + EsDocument
+    {
         self.client.index(item)
     }
 
-    pub fn delete<T: EsDto>(&mut self, id: Uuid) -> Result<(), EsError> {
+    pub fn delete<T>(&mut self, id: Uuid) -> Result<(), EsError> 
+        where T: EsDto + EsDocument
+    {
         self.client.delete::<T>(id)
     }
 }

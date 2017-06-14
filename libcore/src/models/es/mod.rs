@@ -1,7 +1,7 @@
 
 use uuid::Uuid;
 
-use es::{SystemInfo, EsDto};
+use es::{SystemInfo, EsDto, EsDocument};
 use models::field::FieldValue;
 
 #[derive(Serialize, Deserialize)]
@@ -32,11 +32,13 @@ pub struct RecordDto {
     pub system: SystemInfo,
 }
 
-impl EsDto for RecordDto {
+impl EsDocument for RecordDto {
     fn doc_type() -> &'static str {
         "records"
     }
+}
 
+impl EsDto for RecordDto {
     fn id(&self) -> Uuid {
         self.system.id
     }

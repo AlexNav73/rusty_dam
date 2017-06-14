@@ -52,7 +52,7 @@ impl ToDto for File {
     }
 }
 
-impl FromDto for File {
+impl<'a> FromDto<'a> for File {
     type Dto = FileDto;
 
     fn from_dto(dto: Self::Dto, app: App) -> File {
