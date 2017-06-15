@@ -30,9 +30,9 @@ fn get_record() {
         println!("Record id: {}", new_record.id());
         assert!(new_record.save().is_ok());
 
-        let record = app.get::<Record>(record_id);
+        let record = app.get::<Record>(record_id)
+            .map(|r| println!("Record id: {}", r.id()));
 
-        println!("Record id: {}", record.as_ref().map(|r| r.id()).unwrap());
         assert!(record.is_ok());
     }).unwrap();
 }
@@ -61,7 +61,7 @@ fn create_record() {
 fn load_cls() {
     let mut c = App::new(Config);
     c.as_admin(|app| {
-        let cls_id = Uuid::parse_str("f6e09bf2-4495-4047-8022-5a1317e67506").unwrap();
+        let cls_id = Uuid::parse_str("025399e4-3484-4ade-9edb-cd0feb2a19a6").unwrap();
         let cls = app.get::<Classification>(cls_id);
 
         println!("Classification: {:?}", cls);
@@ -75,7 +75,7 @@ fn load_cls() {
 fn load_classification_path() {
     let mut c = App::new(Config);
     c.as_admin(|app| {
-        let cls_id = Uuid::parse_str("eda974ca-03b0-48a3-baf0-abec38ebc54c").unwrap();
+        let cls_id = Uuid::parse_str("025399e4-3484-4ade-9edb-cd0feb2a19a6").unwrap();
         let cls = app.get::<Classification>(cls_id);
 
         println!("Classification name path: {:?}", cls);

@@ -4,15 +4,15 @@ version = "0.1.0"
 authors = ["AlexNav73 <fifthhorseman@mail.ru>"]
 
 [dependencies]
-rocket = "*"
-rocket_codegen = "*"
-serde = "*"
-serde_derive = "*"
-serde_json = "*"
-uuid = "*"
+rocket = "0.2.8"
+rocket_codegen = "0.2.8"
+serde = "1.0.0"
+serde_derive = "1.0.0"
+serde_json = "1.0.0"
+uuid = { version = "0.5.0", features = ["serde", "v4"] }
 
 [dependencies.rocket_contrib]
-version = "*"
+version = "0.2.8"
 default-features = false
 features = ["uuid", "tera_templates", "json"]
 

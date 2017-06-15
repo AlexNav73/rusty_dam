@@ -23,7 +23,8 @@ mod es;
 mod pg;
 mod models;
 
-use serde::{Serialize, Deserialize};
+use serde::Serialize;
+use serde::de::DeserializeOwned;
 
 use std::fmt;
 
@@ -44,13 +45,13 @@ pub trait Entity {
 pub trait Definition {}
 
 pub trait ToDto {
-    type Dto: Serialize + Deserialize;
+    type Dto: Serialize + DeserializeOwned;
 
     fn to_dto(&self) -> Self::Dto;
 }
 
 pub trait FromDto {
-    type Dto: Serialize + Deserialize;
+    type Dto: Serialize + DeserializeOwned;
 
     fn from_dto(dto: Self::Dto, app: App) -> Self;
 }

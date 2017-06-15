@@ -1,5 +1,6 @@
 
-use serde::{Serialize, Deserialize};
+use serde::Serialize;
+use serde::de::DeserializeOwned;
 use chrono::naive::datetime::NaiveDateTime;
 use uuid::Uuid;
 
@@ -14,7 +15,7 @@ use rs_es::operations::search::{SearchHitsResult, SearchResult};
 use FromDto;
 use connection::App;
 
-pub trait EsDto: Serialize + Deserialize {
+pub trait EsDto: Serialize + DeserializeOwned {
     fn doc_type() -> &'static str;
     fn id(&self) -> Uuid;
 }
