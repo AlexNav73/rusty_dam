@@ -12,54 +12,91 @@ use models::pg::ClassificationNamePath;
 use models::pg::schema::classifications::dsl::*;
 use connection::App;
 
+pub struct ClassificationBuilder {
+    name: Option<String>,
+    parent_id: Option<Uuid>,
+    name_path: Option<ClassificationNamePath>,
+    application: App,
+}
+
+impl ClassificationBuilder {
+    pub fn new(app: App) -> Self {
+        ClassificationBuilder {
+            name: None,
+            parent_id: None,
+            name_path: None,
+            application: app
+        }
+    }
+
+    pub fn parent(mut self, pid: Uuid) -> Self {
+        self.parent_id = Some(pid);
+        self
+    }
+
+    pub fn name<S>(mut self, cls_name: S) -> Self 
+        where S: Into<String>
+    {
+        self.name = Some(cls_name.into());
+        self
+    }
+
+    fn name_path<T>(self, _path: T) -> Self 
+        where T: Into<ClassificationNamePath>
+    {
+        //let name_path = name_path.into();
+        //let parent_cls = {
+            //let parent = name_path.parent().ok_or(LoadError::RootCls)?;
+            //let pg_conn = app.pg().connect();
+
+            //classifications
+                //.filter(name.eq(parent.name()))
+                //.first::<CLS>(&*pg_conn)
+                //.map_err(|_| LoadError::ParentNotExists)?
+        //};
+        self
+    }
+
+    pub fn build(mut self) -> Result<Classification, LoadError> {
+        use diesel::associations::HasTable;
+        use models::pg::models::*;
+
+        let cls_name = self.name.clone().expect("Name is not assigned");
+        let new_cls = NewClassification {
+            parent_id: self.parent_id,
+            name: cls_name.as_str(),
+        };
+
+        let pg_conn = self.application.pg().connect();
+        ::diesel::insert(&new_cls)
+            .into(classifications::table())
+            .get_result::<(Uuid, Option<Uuid>, String)>(&*pg_conn)
+            .map(move |cls| self::Classification {
+                id: cls.0,
+                parent_id: cls.1,
+                name_path: ClassificationNamePath::from_uuid(pg_conn, cls.0).unwrap(),
+                is_dirty: false,
+                application: self.application,
+            })
+            .map_err(|_| LoadError::NotFound)
+    }
+}
+
 pub struct Classification {
     id: Uuid,
     parent_id: Option<Uuid>,
     name_path: ClassificationNamePath,
-    is_new: bool,
     is_dirty: bool,
     application: App,
 }
 
 impl Classification {
-    pub fn new<N>(mut app: App, name_path: N) -> Result<Self, LoadError> 
-        where N: Into<ClassificationNamePath>
-    {
-        use models::pg::models::Classification as CLS;
-
-        if app.session().is_none() {
-            return Err(LoadError::Unauthorized);
-        }
-
-        let name_path = name_path.into();
-        let parent_cls = {
-            let parent = name_path.parent().ok_or(LoadError::RootCls)?;
-            let pg_conn = app.pg().connect();
-
-            classifications
-                .filter(name.eq(parent.name()))
-                .first::<CLS>(&*pg_conn)
-                .map_err(|_| LoadError::ParentNotExists)?
-        };
-
-        Ok(Classification {
-               id: Uuid::new_v4(),
-               parent_id: Some(parent_cls.id),
-               name_path: name_path,
-               is_new: true,
-               is_dirty: false,
-               application: app,
-           })
-    }   
-
     pub fn save(&mut self) -> Result<(), LoadError> {
         if self.application.session().is_none() {
             return Err(LoadError::Unauthorized);
         }
 
-        if self.is_new {
-            self.save_new()
-        } else if self.is_dirty {
+        if self.is_dirty {
             self.update()
         } else {
             Ok(())
@@ -96,27 +133,9 @@ impl Classification {
             .map_err(|_| LoadError::NotFound)
     }
 
-    fn save_new(&mut self) -> Result<(), LoadError> {
-        use diesel::associations::HasTable;
-        use models::pg::models::*;
-
-        self.is_new = false;
-        let new_cls = NewClassification {
-            id: self.id,
-            parent_id: self.parent_id,
-            name: self.name_path.name(),
-        };
-        let pg_conn = self.application.pg().connect();
-        ::diesel::insert(&new_cls)
-            .into(classifications::table())
-            .execute(&*pg_conn)
-            .map(|_| ())
-            .map_err(|_| LoadError::NotFound)
-    }
-
-    pub fn move_to<T: Into<ClassificationNamePath>>(&mut self,
-                                                    new_path: T)
-                                                    -> Result<(), LoadError> {
+    pub fn move_to<T>(&mut self, new_path: T) -> Result<(), LoadError> 
+        where T: Into<ClassificationNamePath>
+    {
         if self.application.session().is_none() {
             return Err(LoadError::Unauthorized);
         }
@@ -156,20 +175,16 @@ impl Classification {
             return Err(LoadError::Unauthorized);
         }
 
-        if !self.is_new {
-            let pg_conn = self.application.pg().connect(); 
+        let pg_conn = self.application.pg().connect(); 
 
-            let m2m = Classification2FieldGroup {
-                classification_id: self.id,
-                field_group_id: fgroup.id()
-            };
-            ::diesel::insert(&m2m).into(classification2field_groups::table())
-                .execute(&*pg_conn)
-                .map(|_| ())
-                .map_err(|_| LoadError::NotFound)
-        } else {
-            self.save_new().and_then(|_| self.add_field_group(fgroup))
-        }
+        let m2m = Classification2FieldGroup {
+            classification_id: self.id,
+            field_group_id: fgroup.id()
+        };
+        ::diesel::insert(&m2m).into(classification2field_groups::table())
+            .execute(&*pg_conn)
+            .map(|_| ())
+            .map_err(|_| LoadError::NotFound)
     }
 
     pub fn get_fields(&mut self) -> Result<Vec<RecordField>, LoadError> {
@@ -182,25 +197,20 @@ impl Classification {
             return Err(LoadError::Unauthorized);
         }
 
-        if !self.is_new {
-            let pg_conn = self.application.pg().connect();
+        let pg_conn = self.application.pg().connect();
+        let cls_fg_ids = classification2field_groups
+            .filter(classification_id.eq(self.id))
+            .select(field_group_id);
 
-            let cls_fg_ids = classification2field_groups
-                .filter(classification_id.eq(self.id))
-                .select(field_group_id);
-
-            field2field_groups::table()
-                .inner_join(fields::table())
-                .filter(fgid.eq_any(cls_fg_ids))
-                .select((fid, name))
-                .load::<(Uuid, String)>(&*pg_conn)
-                .map(|s| s.into_iter()
-                     .map(|f| RecordField::empty(self.application.clone(), f.0, f.1))
-                     .collect())
-                .map_err(|_| LoadError::NotFound)
-        } else {
-            self.save_new().and_then(|_| self.get_fields())
-        }
+        field2field_groups::table()
+            .inner_join(fields::table())
+            .filter(fgid.eq_any(cls_fg_ids))
+            .select((fid, name))
+            .load::<(Uuid, String)>(&*pg_conn)
+            .map(|s| s.into_iter()
+                 .map(|f| RecordField::empty(self.application.clone(), f.0, f.1))
+                 .collect())
+            .map_err(|_| LoadError::NotFound)
     }
 
     pub fn delete(mut self) -> Result<(), LoadError> {
@@ -240,7 +250,6 @@ impl Load for Classification {
                 id: c.id,
                 parent_id: c.parent_id,
                 name_path: ClassificationNamePath::from_uuid(pg_conn, c.id).unwrap(),
-                is_new: false,
                 is_dirty: false,
                 application: app
             })
@@ -266,7 +275,6 @@ impl<'a> SearchBy<&'a str> for Classification {
                 id: c.id,
                 parent_id: c.parent_id,
                 name_path: ClassificationNamePath::from_uuid(pg_conn, c.id).unwrap(),
-                is_new: false,
                 is_dirty: false,
                 application: app
             })

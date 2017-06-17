@@ -10,8 +10,8 @@ use libcore::LoadError;
 use libcore::record::Record;
 use libcore::classification::Classification;
 use libcore::user::User;
-use libcore::field::Field;
-use libcore::field_group::FieldGroup;
+use libcore::field::{Field, FieldBuilder};
+use libcore::field_group::{FieldGroup, FieldGroupBuilder};
 
 struct Config;
 
@@ -107,12 +107,16 @@ fn add_field_to_classification() {
     let mut c = App::new(Config);
     c.as_admin(|app| {
         let mut gender: Field = app.get("Gender")
-            .or_else(|_| Field::new(app.clone(), "Gender"))
+            .or_else(|_| FieldBuilder::new(app.clone())
+                            .name("Gender")
+                            .build())
             .expect("Unauthorized access");
         gender.save().expect("Can't save field");
 
         let mut field_group: FieldGroup = app.get("Basic")
-            .or_else(|_| FieldGroup::new(app.clone(), "Basic"))
+            .or_else(|_| FieldGroupBuilder::new(app.clone())
+                            .name("Basic")
+                            .build())
             .expect("Unauthorized access");
         field_group.save().expect("Can't save field group");
 

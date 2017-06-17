@@ -21,7 +21,6 @@ pub struct ClassificationChangeset {
 #[derive(Insertable)]
 #[table_name="classifications"]
 pub struct NewClassification<'a> {
-    pub id: Uuid,
     pub parent_id: Option<Uuid>,
     pub name: &'a str,
 }
@@ -45,7 +44,6 @@ pub struct Field {
 #[derive(Insertable)]
 #[table_name="fields"]
 pub struct NewField<'a> {
-    pub id: Uuid,
     pub name: &'a str,
 }
 
@@ -59,7 +57,6 @@ pub struct FieldGroup {
 #[derive(Insertable)]
 #[table_name="field_groups"]
 pub(crate) struct NewFieldGroup<'a> {
-    pub id: Uuid,
     pub name: &'a str,
 }
 

@@ -7,37 +7,67 @@ use models::es::FieldDto;
 use models::pg::schema::fields::dsl;
 use connection::App;
 
+pub struct FieldBuilder {
+    name: Option<String>,
+    application: App,
+}
+
+impl FieldBuilder {
+    pub fn new(app: App) -> Self {
+        FieldBuilder {
+            name: None,
+            application: app
+        }
+    }
+
+    pub fn name<S>(mut self, name: S) -> Self 
+        where S: Into<String>
+    {
+        self.name = Some(name.into());
+        self
+    }
+
+    pub fn build(mut self) -> Result<Field, LoadError> {
+        use diesel::associations::HasTable;
+        use models::pg::models::*;
+
+        if self.application.session().is_none() {
+            return Err(LoadError::Unauthorized);
+        }
+
+        let name = self.name.clone().expect("Name is not assigned");
+        let new_field = NewField {
+            name: name.as_str(),
+        };
+
+        let pg_conn = self.application.pg().connect();
+        ::diesel::insert(&new_field)
+            .into(dsl::fields::table())
+            .get_result::<(Uuid, String)>(&*pg_conn)
+            .map(move |f| self::Field {
+                id: f.0,
+                name: self.name.unwrap(),
+                is_dirty: false,
+                application: self.application,
+            })
+            .map_err(|_| LoadError::NotFound)
+    }
+}
+
 pub struct Field {
     id: Uuid,
     name: String,
-    is_new: bool,
     is_dirty: bool,
     application: App,
 }
 
 impl Field {
-    pub fn new<S: Into<String>>(app: App, fname: S) -> Result<Self, LoadError> {
-        if app.session().is_none() {
-            return Err(LoadError::Unauthorized);
-        }
-
-        Ok(Field {
-               id: Uuid::new_v4(),
-               name: fname.into(),
-               is_new: true,
-               is_dirty: false,
-               application: app,
-           })
-    }
-
     pub fn save(&mut self) -> Result<(), LoadError> {
         if self.application.session().is_none() {
             return Err(LoadError::Unauthorized);
         }
 
-        if self.is_new {
-            self.save_new()
-        } else if self.is_dirty {
+        if self.is_dirty {
             self.update()
         } else {
             Ok(())
@@ -50,24 +80,6 @@ impl Field {
 
         ::diesel::update(dsl::fields.find(self.id))
             .set(dsl::name.eq(self.name.as_str()))
-            .execute(&*pg_conn)
-            .map(|_| ())
-            .map_err(|_| LoadError::NotFound)
-    }
-
-    fn save_new(&mut self) -> Result<(), LoadError> {
-        use diesel::associations::HasTable;
-        use models::pg::models::*;
-
-        self.is_new = false;
-        let new_field = NewField {
-            id: self.id,
-            name: self.name.as_str(),
-        };
-
-        let pg_conn = self.application.pg().connect();
-        ::diesel::insert(&new_field)
-            .into(dsl::fields::table())
             .execute(&*pg_conn)
             .map(|_| ())
             .map_err(|_| LoadError::NotFound)
@@ -101,7 +113,6 @@ impl Load for Field {
             .map(|f| self::Field {
                 id: f.id,
                 name: f.name,
-                is_new: false,
                 is_dirty: false,
                 application: app,
             })
@@ -126,7 +137,6 @@ impl<'a> SearchBy<&'a str> for Field {
             .map(|f| self::Field {
                 id: f.id,
                 name: f.name,
-                is_new: false,
                 is_dirty: false,
                 application: app,
             })

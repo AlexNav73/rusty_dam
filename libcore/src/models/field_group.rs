@@ -7,29 +7,61 @@ use models::pg::schema::field_groups::dsl;
 use models::field::Field;
 use connection::App;
 
+pub struct FieldGroupBuilder {
+    name: Option<String>,
+    application: App
+}
+
+impl FieldGroupBuilder {
+    pub fn new(app: App) -> Self {
+        FieldGroupBuilder {
+            name: None,
+            application: app
+        }
+    }
+
+    pub fn name<S>(mut self, name: S) -> Self 
+        where S: Into<String>
+    {
+        self.name = Some(name.into());
+        self
+    }
+
+    pub fn build(mut self) -> Result<FieldGroup, LoadError> {
+        use diesel::associations::HasTable;
+        use models::pg::models::*;
+
+        if self.application.session().is_none() {
+            return Err(LoadError::Unauthorized);
+        }
+
+        let name = self.name.clone().expect("Name is not assigned");
+        let new_fg = NewFieldGroup {
+            name: name.as_str()
+        };
+
+        let pg_conn = self.application.pg().connect();
+        ::diesel::insert(&new_fg)
+            .into(dsl::field_groups::table())
+            .get_result::<(Uuid, String)>(&*pg_conn)
+            .map(move |fg| self::FieldGroup {
+                id: fg.0,
+                name: self.name.unwrap(),
+                is_dirty: false,
+                application: self.application,
+            })
+            .map_err(|_| LoadError::NotFound)
+    }
+}
+
 pub struct FieldGroup {
     id: Uuid,
     name: String,
-    is_new: bool,
     is_dirty: bool,
     application: App
 }
 
 impl FieldGroup {
-    pub fn new<S: Into<String>>(app: App, name: S) -> Result<Self, LoadError> {
-        if app.session().is_none() {
-            return Err(LoadError::Unauthorized);
-        }
-
-        Ok(FieldGroup {
-            id: Uuid::new_v4(),
-            name: name.into(),
-            is_new: true,
-            is_dirty: false,
-            application: app,
-        })
-    }
-
     pub fn add_field(&mut self, field: &Field) -> Result<(), LoadError> {
         use models::pg::models::*;
         use models::pg::schema::field2field_groups::dsl as f2fg;
@@ -39,21 +71,17 @@ impl FieldGroup {
             return Err(LoadError::Unauthorized);
         }
 
-        if !self.is_new {
-            let pg_conn = self.application.pg().connect();
+        let pg_conn = self.application.pg().connect();
 
-            let m2m = Field2FieldGroup {
-                field_group_id: self.id,
-                field_id: field.id(),
-            };
-            ::diesel::insert(&m2m)
-                .into(f2fg::field2field_groups::table())
-                .execute(&*pg_conn)
-                .map(|_| ())
-                .map_err(|_| LoadError::NotFound)
-        } else {
-            self.save_new().and_then(|_| self.add_field(field))
-        }
+        let m2m = Field2FieldGroup {
+            field_group_id: self.id,
+            field_id: field.id(),
+        };
+        ::diesel::insert(&m2m)
+            .into(f2fg::field2field_groups::table())
+            .execute(&*pg_conn)
+            .map(|_| ())
+            .map_err(|_| LoadError::NotFound)
     }
 
     pub fn save(&mut self) -> Result<(), LoadError> {
@@ -61,9 +89,7 @@ impl FieldGroup {
             return Err(LoadError::Unauthorized);
         }
 
-        if self.is_new {
-            self.save_new()
-        } else if self.is_dirty {
+        if self.is_dirty {
             self.update()
         } else {
             Ok(())
@@ -76,24 +102,6 @@ impl FieldGroup {
 
         ::diesel::update(dsl::field_groups.find(self.id))
             .set(dsl::name.eq(self.name.as_str()))
-            .execute(&*pg_conn)
-            .map(|_| ())
-            .map_err(|_| LoadError::NotFound)
-    }
-
-    fn save_new(&mut self) -> Result<(), LoadError> {
-        use diesel::associations::HasTable;
-        use models::pg::models::*;
-
-        self.is_new = false;
-        let new_fg = NewFieldGroup {
-            id: self.id,
-            name: self.name.as_str(),
-        };
-
-        let pg_conn = self.application.pg().connect();
-        ::diesel::insert(&new_fg)
-            .into(dsl::field_groups::table())
             .execute(&*pg_conn)
             .map(|_| ())
             .map_err(|_| LoadError::NotFound)
@@ -127,7 +135,6 @@ impl Load for FieldGroup {
             .map(|f| self::FieldGroup {
                 id: f.id,
                 name: f.name,
-                is_new: false,
                 is_dirty: false,
                 application: app
             })
@@ -152,7 +159,6 @@ impl<'a> SearchBy<&'a str> for FieldGroup {
             .map(|f| self::FieldGroup {
                 id: f.id,
                 name: f.name,
-                is_new: false,
                 is_dirty: false,
                 application: app
             })
