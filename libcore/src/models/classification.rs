@@ -4,8 +4,9 @@ use uuid::Uuid;
 
 use std::fmt;
 
-use {Definition, IntoEntity, Entity, ToDto, FromDto, Load, LoadError};
+use {Definition, SearchBy, IntoEntity, Entity, ToDto, FromDto, Load, LoadError};
 use models::field::RecordField;
+use models::field_group::FieldGroup;
 use models::es::ClassificationDto;
 use models::pg::ClassificationNamePath;
 use models::pg::schema::classifications::dsl::*;
@@ -21,9 +22,9 @@ pub struct Classification {
 }
 
 impl Classification {
-    pub fn new<N: Into<ClassificationNamePath>>(mut app: App,
-                                                name_path: N)
-                                                -> Result<Self, LoadError> {
+    pub fn new<N>(mut app: App, name_path: N) -> Result<Self, LoadError> 
+        where N: Into<ClassificationNamePath>
+    {
         use models::pg::models::Classification as CLS;
 
         if app.session().is_none() {
@@ -146,11 +147,10 @@ impl Classification {
         self.is_dirty = true;
     }
 
-    pub fn add_field_group(&mut self, fg_id: Uuid) -> Result<(), LoadError> {
+    pub fn add_field_group(&mut self, fgroup: &FieldGroup) -> Result<(), LoadError> {
         use diesel::associations::HasTable;
-        use models::pg::models::{FieldGroup, Classification2FieldGroup};
+        use models::pg::models::Classification2FieldGroup;
         use models::pg::schema::classification2field_groups::dsl::*;
-        use models::pg::schema::field_groups::dsl::*;
 
         if self.application.session().is_none() {
             return Err(LoadError::Unauthorized);
@@ -159,19 +159,16 @@ impl Classification {
         if !self.is_new {
             let pg_conn = self.application.pg().connect(); 
 
-            field_groups.find(fg_id).first::<FieldGroup>(&*pg_conn)
-                .map(|fg| Classification2FieldGroup {
-                    classification_id: self.id,
-                    field_group_id: fg.id
-                })
-                .and_then(|m2m| {
-                    ::diesel::insert(&m2m).into(classification2field_groups::table())
-                        .execute(&*pg_conn)
-                })
+            let m2m = Classification2FieldGroup {
+                classification_id: self.id,
+                field_group_id: fgroup.id()
+            };
+            ::diesel::insert(&m2m).into(classification2field_groups::table())
+                .execute(&*pg_conn)
                 .map(|_| ())
                 .map_err(|_| LoadError::NotFound)
         } else {
-            self.save_new().and_then(|_| self.add_field_group(fg_id))
+            self.save_new().and_then(|_| self.add_field_group(fgroup))
         }
     }
 
@@ -239,17 +236,41 @@ impl Load for Classification {
         classifications
             .find(cls_id)
             .first::<Classification>(&*pg_conn)
-            .map_err(|_| LoadError::NotFound)
-            .and_then(|c| {
-                Ok(self::Classification {
-                       id: c.id,
-                       parent_id: c.parent_id,
-                       name_path: ClassificationNamePath::from_uuid(pg_conn, c.id)?,
-                       is_new: false,
-                       is_dirty: false,
-                       application: app,
-                   })
+            .map(|c| self::Classification {
+                id: c.id,
+                parent_id: c.parent_id,
+                name_path: ClassificationNamePath::from_uuid(pg_conn, c.id).unwrap(),
+                is_new: false,
+                is_dirty: false,
+                application: app
             })
+            .map_err(|_| LoadError::NotFound)
+    }
+}
+
+impl SearchBy<Uuid> for Classification {
+    fn search(app: App, query: Uuid) -> Result<Self, LoadError> {
+        Self::load(app, query)
+    }
+}
+
+impl<'a> SearchBy<&'a str> for Classification {
+    fn search(mut app: App, cls_name: &'a str) -> Result<Self, LoadError> {
+        use models::pg::models::*;
+
+        let pg_conn = app.pg().connect();
+
+        classifications.filter(name.eq(cls_name))
+            .first::<Classification>(&*pg_conn)
+            .map(|c| self::Classification {
+                id: c.id,
+                parent_id: c.parent_id,
+                name_path: ClassificationNamePath::from_uuid(pg_conn, c.id).unwrap(),
+                is_new: false,
+                is_dirty: false,
+                application: app
+            })
+            .map_err(|_| LoadError::NotFound)
     }
 }
 

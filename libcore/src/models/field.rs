@@ -2,7 +2,7 @@
 use diesel::prelude::*;
 use uuid::Uuid;
 
-use {Load, Entity, ToDto, FromDto, LoadError};
+use {Load, SearchBy, Entity, ToDto, FromDto, LoadError};
 use models::es::FieldDto;
 use models::pg::schema::fields::dsl;
 use connection::App;
@@ -28,32 +28,6 @@ impl Field {
                is_dirty: false,
                application: app,
            })
-    }
-
-    pub fn add_to_field_group(&mut self, fg_id: Uuid) -> Result<(), LoadError> {
-        use models::pg::models::*;
-        use models::pg::schema::field_groups::dsl::*;
-        use models::pg::schema::field2field_groups::dsl as f2fg;
-        use diesel::associations::HasTable;
-
-        if self.application.session().is_none() {
-            return Err(LoadError::Unauthorized);
-        }
-
-        let pg_conn = self.application.pg().connect();
-        field_groups.find(fg_id).select(id)
-            .first::<Uuid>(&*pg_conn)
-            .and_then(|fid| {
-                let m2m = Field2FieldGroup {
-                    field_id: self.id,
-                    field_group_id: fid,
-                };
-                ::diesel::insert(&m2m)
-                    .into(f2fg::field2field_groups::table())
-                    .execute(&*pg_conn)
-            })
-            .map(|_| ())
-            .map_err(|_| LoadError::NotFound)
     }
 
     pub fn save(&mut self) -> Result<(), LoadError> {
@@ -124,16 +98,45 @@ impl Load for Field {
         dsl::fields
             .find(fid)
             .first::<Field>(&*pg_conn)
-            .map_err(|_| LoadError::NotFound)
-            .and_then(|f| {
-                Ok(self::Field {
-                       id: f.id,
-                       name: f.name,
-                       is_new: false,
-                       is_dirty: false,
-                       application: app,
-                   })
+            .map(|f| self::Field {
+                id: f.id,
+                name: f.name,
+                is_new: false,
+                is_dirty: false,
+                application: app,
             })
+            .map_err(|_| LoadError::NotFound)
+    }
+}
+
+impl SearchBy<Uuid> for Field {
+    fn search(app: App, query: Uuid) -> Result<Self, LoadError> {
+        Field::load(app, query)
+    }
+}
+
+impl<'a> SearchBy<&'a str> for Field {
+    fn search(mut app: App, fname: &'a str) -> Result<Self, LoadError> {
+        use models::pg::models::*;
+
+        let pg_conn = app.pg().connect();
+
+        dsl::fields.filter(dsl::name.eq(fname))
+            .first::<Field>(&*pg_conn)
+            .map(|f| self::Field {
+                id: f.id,
+                name: f.name,
+                is_new: false,
+                is_dirty: false,
+                application: app,
+            })
+            .map_err(|_| LoadError::NotFound)
+    }
+}
+
+impl Entity for Field {
+    fn id(&self) -> Uuid {
+        self.id
     }
 }
 
@@ -156,11 +159,11 @@ impl RecordField {
         }
     }
 
-    fn value(&self) -> &FieldValue {
+    pub fn value(&self) -> &FieldValue {
         &self.value
     }
 
-    fn set_value<T: Into<FieldValue>>(&mut self, value: T) {
+    pub fn set_value<T: Into<FieldValue>>(&mut self, value: T) {
         self.value = value.into();
         self.is_dirty = true;
     }
@@ -215,6 +218,12 @@ impl From<i64> for FieldValue {
 impl From<bool> for FieldValue {
     fn from(v: bool) -> FieldValue {
         FieldValue::Boolean(v)
+    }
+}
+
+impl<'a> From<&'a str> for FieldValue {
+    fn from(v: &'a str) -> FieldValue {
+        FieldValue::Text(v.into())
     }
 }
 

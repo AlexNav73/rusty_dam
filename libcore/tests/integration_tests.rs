@@ -1,7 +1,17 @@
 
 extern crate libcore;
 
-use libcore::*;
+use libcore::Uuid;
+use libcore::App;
+use libcore::Configuration;
+use libcore::Entity;
+use libcore::LoadError;
+
+use libcore::record::Record;
+use libcore::classification::Classification;
+use libcore::user::User;
+use libcore::field::Field;
+use libcore::field_group::FieldGroup;
 
 struct Config;
 
@@ -30,8 +40,8 @@ fn get_record() {
         println!("Record id: {}", new_record.id());
         assert!(new_record.save().is_ok());
 
-        let record = app.get::<Record>(record_id)
-            .map(|r| println!("Record id: {}", r.id()));
+        let record = app.get(record_id)
+            .map(|r: Record| println!("Record id: {}", r.id()));
 
         assert!(record.is_ok());
     }).unwrap();
@@ -61,8 +71,7 @@ fn create_record() {
 fn load_cls() {
     let mut c = App::new(Config);
     c.as_admin(|app| {
-        let cls_id = Uuid::parse_str("025399e4-3484-4ade-9edb-cd0feb2a19a6").unwrap();
-        let cls = app.get::<Classification>(cls_id);
+        let cls: Result<Classification, LoadError> = app.get("Armani");
 
         println!("Classification: {:?}", cls);
 
@@ -75,8 +84,7 @@ fn load_cls() {
 fn load_classification_path() {
     let mut c = App::new(Config);
     c.as_admin(|app| {
-        let cls_id = Uuid::parse_str("025399e4-3484-4ade-9edb-cd0feb2a19a6").unwrap();
-        let cls = app.get::<Classification>(cls_id);
+        let cls: Result<Classification, LoadError> = app.get("Armani");
 
         println!("Classification name path: {:?}", cls);
 
@@ -84,7 +92,7 @@ fn load_classification_path() {
     }).unwrap();
 }
 
-#[test]
+//#[test]
 fn create_admin() {
     let mut c = App::new(Config);
     let u = unsafe { User::create_administrator(c, "Admin", "Admin1") };
@@ -92,4 +100,33 @@ fn create_admin() {
     println!("{:?}", u);
 
     assert!(u.is_err());
+}
+
+#[test]
+fn add_field_to_classification() {
+    let mut c = App::new(Config);
+    c.as_admin(|app| {
+        let mut gender: Field = app.get("Gender")
+            .or_else(|_| Field::new(app.clone(), "Gender"))
+            .expect("Unauthorized access");
+        gender.save().expect("Can't save field");
+
+        let mut field_group: FieldGroup = app.get("Basic")
+            .or_else(|_| FieldGroup::new(app.clone(), "Basic"))
+            .expect("Unauthorized access");
+        field_group.save().expect("Can't save field group");
+
+        let mut armani_cls: Classification = app.get("Armani")
+            .expect("Classification not found");
+
+        let _ = field_group.add_field(&gender);
+        let _ = armani_cls.add_field_group(&field_group);
+
+        let mut record = Record::new(app).unwrap();
+        let save_result = record.save();
+
+        record.classify_as(armani_cls).expect("Can't classify record with this classification");
+        record.fields_mut()[&gender.id()].set_value("Man");
+        record.save().expect("Record not saved");
+    }).unwrap();
 }

@@ -4,6 +4,7 @@ use crypto::Keccak;
 pub mod record;
 pub mod file;
 pub mod field;
+pub mod field_group;
 pub mod classification;
 pub mod user;
 pub mod session;

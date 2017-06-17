@@ -56,6 +56,13 @@ pub struct FieldGroup {
     pub name: String,
 }
 
+#[derive(Insertable)]
+#[table_name="field_groups"]
+pub(crate) struct NewFieldGroup<'a> {
+    pub id: Uuid,
+    pub name: &'a str,
+}
+
 #[derive(Insertable, Queryable, Associations)]
 #[belongs_to(Field)]
 #[belongs_to(FieldGroup)]

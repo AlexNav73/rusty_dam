@@ -29,10 +29,8 @@ use serde::de::DeserializeOwned;
 use std::fmt;
 
 pub use uuid::Uuid;
+pub use models::*;
 pub use connection::App;
-pub use models::record::Record;
-pub use models::user::User;
-pub use models::classification::Classification;
 pub use configuration::Configuration;
 
 pub trait Entity {
@@ -54,6 +52,10 @@ pub trait FromDto {
     type Dto: Serialize + DeserializeOwned;
 
     fn from_dto(dto: Self::Dto, app: App) -> Self;
+}
+
+pub trait SearchBy<Q> where Self: Sized {
+    fn search(app: App, query: Q) -> Result<Self, LoadError>;
 }
 
 pub trait Load: Sized {

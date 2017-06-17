@@ -6,7 +6,7 @@ use std::rc::Rc;
 use std::cell::{RefCell, RefMut, Ref};
 use std::env;
 
-use {Load, LoadError};
+use {SearchBy, LoadError};
 use es::EsService;
 use pg::PgService;
 use configuration::Configuration;
@@ -81,8 +81,10 @@ impl App {
         Ref::map((*self.0).borrow(), |e| &e.session)
     }
 
-    pub fn get<T: Load>(&self, id: Uuid) -> Result<T, LoadError> {
-        T::load(self.clone(), id)
+    pub fn get<T, Q>(&self, query: Q) -> Result<T, LoadError> 
+        where T: SearchBy<Q>
+    {
+        T::search(self.clone(), query)
     }
 
     #[allow(unused_variables)]

@@ -2,7 +2,7 @@
 use uuid::Uuid;
 use chrono::{DateTime, UTC};
 
-use {IntoEntity, Load, LoadError, Entity, ToDto, FromDto};
+use {IntoEntity, SearchBy, Load, LoadError, Entity, ToDto, FromDto};
 use es::SystemInfo;
 use connection::App;
 
@@ -111,6 +111,10 @@ impl Record {
             .map(|r| for f in r { self.fields.add(f) })
             .map(|_| self.classifications.add(RecordClassification::from(classification)))
     }
+
+    pub fn fields_mut(&mut self) -> &mut FieldCollection {
+        &mut self.fields
+    }
 }
 
 impl Entity for Record {
@@ -176,5 +180,11 @@ impl Load for Record {
         app.es()
             .get(app_cloned, id)
             .map_err(|_| LoadError::NotFound)
+    }
+}
+
+impl SearchBy<Uuid> for Record {
+    fn search(app: App, query: Uuid) -> Result<Self, LoadError> {
+        Record::load(app, query)
     }
 }
