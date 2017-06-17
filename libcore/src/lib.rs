@@ -22,6 +22,7 @@ mod es;
 #[macro_use]
 mod pg;
 mod models;
+mod fs;
 
 use serde::Serialize;
 use serde::de::DeserializeOwned;

@@ -22,13 +22,13 @@ impl File {
         }
     }
 
-    pub fn file_stem(&self) -> &str {
-        self.path
-            .as_path()
-            .file_stem()
-            .unwrap()
-            .to_str()
-            .unwrap()
+    pub fn name(&self) -> &str {
+        // TODO: Proper error handling
+        self.path.file_name() .unwrap().to_str().unwrap()
+    }
+
+    pub fn path(&self) -> &Path {
+        self.path.as_path()
     }
 }
 
